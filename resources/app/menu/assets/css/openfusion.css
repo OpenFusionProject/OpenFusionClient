@@ -1,5 +1,6 @@
-#server-table {
-  opacity: 0.90;
+:not(input):not(textarea), :not(input):not(textarea)::after, :not(input):not(textarea)::before {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #server-table > .table-striped tbody tr:nth-of-type(odd) {
@@ -8,6 +9,11 @@
 
 #server-table > .table-striped tbody tr:nth-of-type(even), th {
   background-color: #34476E;
+}
+
+#server-table {
+  font-size: 14pt;
+  opacity: 0.9;
 }
 
 #of-intro-text {
@@ -80,8 +86,18 @@ input {
   color: #fff;
 }
 
-#server-table {
-  font-size: 14pt;
-  opacity: 0.9;
+select {
+  border-color: #0099FF;
+  background-color: #000;
+  color: #fff;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  pointer-events: all !important;
+}
+
+button > i {
+  pointer-events: none;
 }
 

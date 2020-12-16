@@ -77,12 +77,12 @@
                 <div class="modal-header">
                     <h4 class="modal-title">Add Server</h4><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button></div>
                 <div class="modal-body">
-                    <fieldset class="text-left" name="of-addserver-fields"><label>Server Description<input type="text" class="form-row" name="of-serverdesc-field" placeholder="My OpenFusion Server" pattern=".*/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+):([0-9]+)" required="" size="50"></label><label>Server IP<input type="text" class="form-row" name="of-serverip-field" placeholder="127.0.0.1:23000" size="50"></label><label>Game Version<input type="text" class="form-row" name="of-serverdesc-field" list="gameversions" readonly="" placeholder="beta-20100104" size="50"></label></fieldset>
-                </div>
-                <div class="modal-footer"><button class="btn btn-primary border rounded border-primary btn-danger border-danger" type="button" data-dismiss="modal">Cancel</button><button class="btn btn-primary disabled border rounded border-primary btn-success border-success"
+                    <fieldset class="text-left" name="of-addserver-fields"><label>Server Description<input type="text" class="form-row" name="of-serverdesc-field" placeholder="My OpenFusion Server" pattern=".*/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+):([0-9]+)" required="" size="50"></label><label>Server IP<input type="text" class="form-row" name="of-serverip-field" placeholder="127.0.0.1:23000" size="50"></label></fieldset><label>Game Version:&nbsp;<select><option value="12" selected="">beta-20100104</option><option value="13">beta-20100728</option><option value="14">beta-20111013</option></select></label></div>
+                <div
+                    class="modal-footer"><button class="btn btn-primary border rounded border-primary btn-danger border-danger" type="button" data-dismiss="modal">Cancel</button><button class="btn btn-primary disabled border rounded border-primary btn-success border-success"
                         type="button" data-dismiss="modal" disabled="">Save</button></div>
-            </div>
         </div>
+    </div>
     </div>
     <div class="modal fade" role="dialog" tabindex="-1" id="of-deleteservermodal">
         <div class="modal-dialog modal-dialog-centered" role="document">
