@@ -1,0 +1,87 @@
+#server-table {
+  opacity: 0.90;
+}
+
+#server-table > .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #24314D;
+}
+
+#server-table > .table-striped tbody tr:nth-of-type(even), th {
+  background-color: #34476E;
+}
+
+#of-intro-text {
+  text-shadow: 1px 1px 8px #4349C4;
+  color: #4A76B7;
+  font-size: 18px;
+}
+
+img {
+  pointer-events: none;
+}
+
+:root {
+  --gray-dark: #343a40;
+  --primary: #6699FF;
+  --secondary: #384E7A;
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --light: #f8f9fa;
+  --dark: #384E7A;
+}
+
+body {
+  user-select: none;
+  background-color: #000;
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+}
+
+#of-versionnumber {
+  position: fixed;
+  bottom: 4px;
+  right: 8px;
+}
+
+.btn-primary {
+  background-image: url("../../assets/img/btn-primary-bg.png");
+  background-repeat: repeat;
+}
+
+.btn-success {
+  background-image: url("../../assets/img/btn-success-bg.png");
+  background-repeat: repeat;
+}
+
+.btn-danger {
+  background-image: url("../../assets/img/btn-danger-bg.png");
+  background-repeat: repeat;
+}
+
+#of-aboutmodal > .modal-dialog > .modal-content {
+  background-color: #093363;
+  border-color: #6699FF;
+}
+
+#of-addservermodal > .modal-dialog > .modal-content {
+  background-color: #093363;
+  border-color: #6699FF;
+}
+
+#of-deleteservermodal > .modal-dialog > .modal-content {
+  background-color: #093363;
+  border-color: #6699FF;
+}
+
+input {
+  border-color: #0099FF;
+  background-color: #000;
+  color: #fff;
+}
+
+#server-table {
+  font-size: 14pt;
+  opacity: 0.9;
+}
+
