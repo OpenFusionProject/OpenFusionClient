@@ -3,12 +3,22 @@
   user-select: none;
 }
 
+#server-table > .table-striped thead th {
+  background-color: #34476E;
+}
+
 #server-table > .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #34476E;
+}
+
+#server-listing-placeholder > td {
   background-color: #24314D;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #server-table > .table-striped tbody tr:nth-of-type(even), th {
-  background-color: #34476E;
+  background-color: #24314D;
 }
 
 #server-table {
@@ -30,11 +40,6 @@ img {
   --gray-dark: #343a40;
   --primary: #6699FF;
   --secondary: #384E7A;
-  --success: #28a745;
-  --info: #17a2b8;
-  --warning: #ffc107;
-  --danger: #dc3545;
-  --light: #f8f9fa;
   --dark: #384E7A;
 }
 
@@ -99,5 +104,13 @@ button:disabled {
 
 button > i {
   pointer-events: none;
+}
+
+#server-listing-placeholder {
+  visibility: visible;
+}
+
+#of-logo {
+  opacity: 0.9;
 }
 

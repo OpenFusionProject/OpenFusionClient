@@ -10,6 +10,23 @@ var mainWindow = null;
 
 app.commandLine.appendSwitch('--enable-npapi');
 
+// Node version is too old to have a built-in function
+function copyFile(src, dst) {
+  fs.createReadStream(src).pipe(fs.createWriteStream(dst));
+}
+
+function initialSetup() {
+  // Exec installUnity.bat and wait for it to finish.
+  child.execFileSync('cmd.exe', ['/c', 'utils\\installUnity.bat']);
+  console.log("Unity installed.");
+
+  // Copy over files with default values
+  copyFile(__dirname+"\\default_config.json", app.getPath('userData')+"\\config.json");
+  copyFile(__dirname+"\\default_servers.json", app.getPath('userData')+"\\servers.json");
+  copyFile(__dirname+"\\default_versions.json", app.getPath('userData')+"\\versions.json");
+  console.log("JSON files copied.")
+}
+
 ipc.on("exit", function(id) {
 	mainWindow.destroy()
 });
@@ -32,18 +49,14 @@ app.on('ready', function() {
     return;
   }
 
+  // Check for first run
   try {
-    if (fs.existsSync(app.getPath('userData')+"\\unityinstalled")) {
-        console.log("File exists. Skipping Unity Install.");
-    } else {
-        console.log("File does not exist. Installing Unity.");
-        // Exec installUnity.bat and wait for it to finish.
-        child.execFileSync('cmd.exe', ['/c', 'utils\\installUnity.bat']);
-        fs.openSync(app.getPath('userData')+"\\unityinstalled", 'a');
-        console.log("Unity installed.");
+    if (!fs.existsSync(app.getPath('userData')+"\\config.json")) {
+        console.log("Config file not found. Running initial setup.");
+        initialSetup();
     }
   } catch(e) {
-    console.log("An error occurred.");
+    console.log("An error occurred while checking for the config.");
   }
 
   // Create the browser window.
