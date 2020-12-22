@@ -85,7 +85,7 @@ body {
   border-color: #6699FF;
 }
 
-input {
+.form-control, .form-control:focus {
   border-color: #0099FF;
   background-color: #000;
   color: #fff;

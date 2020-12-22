@@ -1,1 +1,0 @@
-http://dexlabs.systems/api/ranks

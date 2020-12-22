@@ -1,9 +1,8 @@
 var app = require('app');  // Module to control application life.
 var ipc = require('ipc');
 var fs = require('fs');
-var os = require('os'); // Required for TEMP folder check
-var dialog = require('dialog'); // Required for TEMP folder check
-var child = require('child_process'); // Required for automatic Unity install
+var os = require('os');
+var dialog = require('dialog');
 var BrowserWindow = require('browser-window');
 
 var mainWindow = null;
@@ -17,7 +16,7 @@ function copyFile(src, dst) {
 
 function initialSetup() {
   // Exec installUnity.bat and wait for it to finish.
-  child.execFileSync('cmd.exe', ['/c', 'utils\\installUnity.bat']);
+  require('child_process').execFileSync('cmd.exe', ['/c', 'utils\\installUnity.bat']);
   console.log("Unity installed.");
 
   // Copy over files with default values
@@ -63,8 +62,15 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 1280, height: 720, show: false, "web-preferences": {"plugins": true}});
   mainWindow.setMinimumSize(640, 480);
 
+
+  // Makes it so external links are opened in the system browser, not Electron
+  mainWindow.webContents.on('new-window', function(e, url) {
+    e.preventDefault();
+    require('shell').openExternal(url);
+  });
+
   // and load the index.html of the app.
-  mainWindow.loadUrl('file://' + __dirname + '/menu/index.html');
+  mainWindow.loadUrl('file://' + __dirname + '/files/index.html');
 
   // Reduces white flash when opening the program
   // Eliminating it entirely requires a newer Electron ver :(
@@ -74,7 +80,7 @@ app.on('ready', function() {
     }, 40);
   });
 
-  //mainWindow.webContents.openDevTools()
+  //mainWindow.webContents.openDevTools()  
 
   mainWindow.on('closed', function() {
     mainWindow = null;
