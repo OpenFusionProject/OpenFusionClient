@@ -39,8 +39,8 @@
                 </div>
             </div>
             <div class="row row-cols-2 d-xl-flex justify-content-center justify-content-xl-center" id="of-serverbuttons" style="padding-bottom: 16px;">
-                <div class="col-4 text-left d-inline-flex justify-content-xl-start"><button class="btn btn-success mr-1" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-addserver-button" type="button" title="Add Server" data-target="#of-addservermodal"><i class="fas fa-plus"></i></button><button class="btn btn-danger disabled" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-deleteserver-button" type="button" title="Delete Server" data-target="#of-deleteservermodal"><i class="fas fa-trash-alt"></i></button></div>
-                <div class="col-4 d-inline-flex justify-content-end"><button class="btn btn-primary disabled" id="of-connect-button" type="button" onclick="connectToServer()">Connect&nbsp;<i class="fas fa-angle-double-right"></i></button></div>
+                <div class="col-4 text-left d-inline-flex justify-content-xl-start"><button class="btn btn-success mr-1" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-addserver-button" type="button" title="Add Server" data-target="#of-addservermodal"><i class="fas fa-plus"></i></button><button class="btn btn-danger disabled" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-deleteserver-button" type="button" title="Delete Server" data-target="#of-deleteservermodal" disabled=""><i class="fas fa-trash-alt"></i></button></div>
+                <div class="col-4 d-inline-flex justify-content-end"><button class="btn btn-primary disabled" id="of-connect-button" type="button" onclick="connectToServer()" disabled="">Connect&nbsp;<i class="fas fa-angle-double-right"></i></button></div>
             </div>
         </div>
         <div class="modal fade" role="dialog" tabindex="-1" id="of-aboutmodal">
@@ -73,7 +73,7 @@
                                 <option value="" selected="" id="addserver-versionlist-placeholder" disabled="">Please select a verison...</option>
                             </select></form>
                     </div>
-                    <div class="modal-footer"><button class="btn btn-primary border rounded border-primary btn-danger border-danger" id="addserver-cancel" type="button" data-dismiss="modal">Cancel</button><button class="btn btn-primary disabled border rounded border-primary btn-success border-success" id="addserver-savebutton" type="submit" data-dismiss="modal" disabled="" form="addserver-form">Save</button></div>
+                    <div class="modal-footer"><button class="btn btn-primary border rounded border-primary btn-danger border-danger" id="addserver-cancel" type="button" data-dismiss="modal">Cancel</button><button class="btn btn-primary disabled border rounded border-primary btn-success border-success" id="addserver-savebutton" type="submit" data-dismiss="modal" disabled="" form="addserver-form" onclick="addServer();">Save</button></div>
                 </div>
             </div>
         </div>
@@ -86,7 +86,7 @@
                     <div class="modal-body">
                         <p class="lead">Do you really want to delete&nbsp;<a id="deleteserver-servername">SERVER_NAME</a>?<br>You could always re-add it later.</p>
                     </div>
-                    <div class="modal-footer"><button class="btn btn-primary border rounded border-primary" type="button" data-dismiss="modal">Cancel</button><button class="btn btn-primary border rounded border-primary btn-danger border-danger" id="deleteserver-button" type="button" data-dismiss="modal">Yes, Delete</button></div>
+                    <div class="modal-footer"><button class="btn btn-primary border rounded border-primary" type="button" data-dismiss="modal">Cancel</button><button class="btn btn-primary border rounded border-primary btn-danger border-danger" id="deleteserver-button" type="button" data-dismiss="modal" onclick="deleteServer();">Yes, Delete</button></div>
                 </div>
             </div>
         </div>

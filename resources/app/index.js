@@ -15,19 +15,25 @@ function copyFile(src, dst) {
 }
 
 function initialSetup() {
+  // Display a small window to inform the user that the app is working
+  setupWindow = new BrowserWindow({width: 275, height: 450, resizable: false, center:true, frame:false});
+  setupWindow.loadUrl('file://' + __dirname + '/files/initialsetup.html');
   // Exec installUnity.bat and wait for it to finish.
-  require('child_process').execFileSync('cmd.exe', ['/c', 'utils\\installUnity.bat']);
-  console.log("Unity installed.");
-
-  // Copy over files with default values
-  copyFile(__dirname+"\\default_config.json", app.getPath('userData')+"\\config.json");
-  copyFile(__dirname+"\\default_servers.json", app.getPath('userData')+"\\servers.json");
-  copyFile(__dirname+"\\default_versions.json", app.getPath('userData')+"\\versions.json");
-  console.log("JSON files copied.")
+  var child = require('child_process').spawn('cmd.exe', ['/c', 'utils\\installUnity.bat']);
+  child.on('exit', function() {
+    console.log("Unity installed.");
+    // Copy over files with default values
+    copyFile(__dirname+"\\default_config.json", app.getPath('userData')+"\\config.json");
+    copyFile(__dirname+"\\default_servers.json", app.getPath('userData')+"\\servers.json");
+    copyFile(__dirname+"\\default_versions.json", app.getPath('userData')+"\\versions.json");
+    console.log("JSON files copied.");
+    setupWindow.destroy();
+    showMainWindow();
+  })
 }
 
 ipc.on("exit", function(id) {
-  mainWindow.destroy()
+  mainWindow.destroy();
 });
 
 // Quit when all windows are closed.
@@ -43,24 +49,26 @@ app.on('ready', function() {
   if (zip_check) {
     errormsg = 
     ("It has been detected that OpenFusionClient is running from the TEMP folder.\n\n"+
-    "Please extract the entire Client folder to a location of your choice before starting OpenFusionClient.");
+      "Please extract the entire Client folder to a location of your choice before starting OpenFusionClient.");
     dialog.showErrorBox("Error!", errormsg);
     return;
-  }
-
-  // Check for first run
-  try {
-    if (!fs.existsSync(app.getPath('userData')+"\\config.json")) {
-        console.log("Config file not found. Running initial setup.");
-        initialSetup();
-    }
-  } catch(e) {
-    console.log("An error occurred while checking for the config.");
   }
 
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 1280, height: 720, show: false, "web-preferences": {"plugins": true}});
   mainWindow.setMinimumSize(640, 480);
+
+  // Check for first run
+  try {
+    if (!fs.existsSync(app.getPath('userData')+"\\config.json")) {
+      console.log("Config file not found. Running initial setup.");
+      initialSetup();
+    } else {
+      showMainWindow();
+    }
+  } catch(e) {
+    console.log("An error occurred while checking for the config.");
+  }
 
   // Makes it so external links are opened in the system browser, not Electron
   mainWindow.webContents.on('new-window', function(e, url) {
@@ -68,6 +76,12 @@ app.on('ready', function() {
     require('shell').openExternal(url);
   });
 
+  mainWindow.on('closed', function() {
+    mainWindow = null;
+  });
+});
+
+function showMainWindow() {
   // and load the index.html of the app.
   mainWindow.loadUrl('file://' + __dirname + '/files/index.html');
 
@@ -81,9 +95,7 @@ app.on('ready', function() {
   });
 
   mainWindow.webContents.openDevTools()  
+}
+  
 
-  mainWindow.on('closed', function() {
-    mainWindow = null;
-  });
-
-});
+  

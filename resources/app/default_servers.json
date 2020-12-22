@@ -11,7 +11,8 @@
 			"uuid": "b84f6859-f500-41f2-bdfa-8e3746639ee9",
 			"description": "OpenFusion Public Server - Academy",
 			"ip": "144.202.52.9:24000",
-			"version": "beta-20111013"
+			"version": "beta-20111013",
+			"endpoint": "https://api.dexlabs.systems/academy/"
 		}
 	],
 	"favorites": []
