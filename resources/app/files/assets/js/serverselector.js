@@ -75,8 +75,10 @@ function setGameInfo(serverUUID) {
     console.log("Using rank endpoint " + rankurl)
     remotefs.writeFileSync(__dirname+"\\rankurl.txt", rankurl);
   } else {
-    // delete the file, this server won't be using it
-    remotefs.unlinkSync(__dirname+"\\rankurl.txt")
+    if (remotefs.existsSync(__dirname+"\\rankurl.txt")) {
+      // delete the file, this server won't be using it
+      remotefs.unlinkSync(__dirname+"\\rankurl.txt");
+    }
   }
 }
 
