@@ -106,11 +106,11 @@ button > i {
   pointer-events: none;
 }
 
-#server-listing-placeholder {
-  visibility: visible;
-}
-
 #of-logo {
   opacity: 0.9;
+}
+
+#server-table .server-listing-entry {
+  cursor: pointer;
 }
 

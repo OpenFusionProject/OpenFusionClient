@@ -27,7 +27,7 @@ function initialSetup() {
 }
 
 ipc.on("exit", function(id) {
-	mainWindow.destroy()
+  mainWindow.destroy()
 });
 
 // Quit when all windows are closed.
@@ -62,7 +62,6 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 1280, height: 720, show: false, "web-preferences": {"plugins": true}});
   mainWindow.setMinimumSize(640, 480);
 
-
   // Makes it so external links are opened in the system browser, not Electron
   mainWindow.webContents.on('new-window', function(e, url) {
     e.preventDefault();
@@ -75,12 +74,13 @@ app.on('ready', function() {
   // Reduces white flash when opening the program
   // Eliminating it entirely requires a newer Electron ver :(
   mainWindow.webContents.on('did-finish-load', function() {
-    setTimeout(function(){
-      mainWindow.show();
-    }, 40);
+    mainWindow.show();
+    mainWindow.webContents.executeJavaScript("loadConfig();");
+    mainWindow.webContents.executeJavaScript("loadGameVersions();");
+    mainWindow.webContents.executeJavaScript("loadServerList();");
   });
 
-  //mainWindow.webContents.openDevTools()  
+  mainWindow.webContents.openDevTools()  
 
   mainWindow.on('closed', function() {
     mainWindow = null;
