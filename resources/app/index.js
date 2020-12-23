@@ -96,6 +96,3 @@ function showMainWindow() {
 
   mainWindow.webContents.openDevTools()  
 }
-  
-
-  

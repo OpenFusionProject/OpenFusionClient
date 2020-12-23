@@ -1,19 +1,19 @@
 {
-	"servers": [
-		{
-			"uuid": "d9773558-6ddf-4d00-8803-d830a22a842b",
-			"description": "OpenFusion Public Server - Original",
-			"ip": "144.202.52.9:23000",
-			"version": "beta-20100104",
-			"endpoint": "https://api.dexlabs.systems/"
-		},
-		{
-			"uuid": "b84f6859-f500-41f2-bdfa-8e3746639ee9",
-			"description": "OpenFusion Public Server - Academy",
-			"ip": "144.202.52.9:24000",
-			"version": "beta-20111013",
-			"endpoint": "https://api.dexlabs.systems/academy/"
-		}
-	],
-	"favorites": []
+    "servers": [
+        {
+            "uuid": "d9773558-6ddf-4d00-8803-d830a22a842b",
+            "description": "OpenFusion Public Server - Original",
+            "ip": "144.202.52.9:23000",
+            "version": "beta-20100104",
+            "endpoint": "https://api.dexlabs.systems/"
+        },
+        {
+            "uuid": "b84f6859-f500-41f2-bdfa-8e3746639ee9",
+            "description": "OpenFusion Public Server - Academy",
+            "ip": "144.202.52.9:24000",
+            "version": "beta-20111013",
+            "endpoint": "https://api.dexlabs.systems/academy/"
+        }
+    ],
+    "favorites": []
 }
