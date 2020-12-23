@@ -24,8 +24,8 @@ function addServer() {
 
   var server = {};
   server['uuid'] = uuidv4();
-  server['description'] = $("#addserver-descinput").val();
-  server['ip'] = $("#addserver-ipinput").val();
+  server['description'] = $("#addserver-descinput").val().length == 0 ? "My OpenFusion Server" : $("#addserver-descinput").val();
+  server['ip'] = $("#addserver-ipinput").val().length == 0 ? "127.0.0.1:23000" : $("#addserver-ipinput").val();
   server['version'] = $("#addserver-versionselect option:selected").text();
   //server['endpoint'] = 
 
