@@ -65,7 +65,7 @@ function loadServerList() {
   serverarray = serverjson['servers'];
 
   $(".server-listing-entry").remove(); // Clear out old stuff, if any
-  disableServerListButtons(); // Disable buttons until another is selected
+  disableServerListButtons(); // Disable buttons until another server is selected
 
   if (serverarray.length > 0) {
     // Servers were found in the JSON
@@ -95,7 +95,7 @@ function loadServerList() {
 function setGameInfo(serverUUID) {
   var result = serverarray.filter(function(obj) {return (obj.uuid === serverUUID);})[0];
   var gameversion = versionarray.filter(function(obj) {return (obj.name === result.version);})[0];
-  window.asseturl = gameversion.url
+  window.asseturl = gameversion.url // gameclient.js needs to access this
 
   remotefs.writeFileSync(__dirname+"\\assetInfo.php", asseturl);
   remotefs.writeFileSync(__dirname+"\\loginInfo.php", result.ip);
@@ -107,8 +107,8 @@ function setGameInfo(serverUUID) {
     remotefs.writeFileSync(__dirname+"\\sponsor.php", httpendpoint+"upsell/sponsor.png");
     remotefs.writeFileSync(__dirname+"\\images.php", httpendpoint+"upsell/");
   } else {
+    // Remove/default the endpoint related stuff, this server won't be using it
     if (remotefs.existsSync(__dirname+"\\rankurl.txt")) {
-      // delete the file, this server won't be using it
       remotefs.unlinkSync(__dirname+"\\rankurl.txt");
       remotefs.writeFileSync(__dirname+"\\sponsor.php", "assets/img/welcome.png");
       remotefs.writeFileSync(__dirname+"\\images.php", "assets/img/");
@@ -143,6 +143,7 @@ $('#server-table').on('click', '.server-listing-entry', function(event) {
   $(this).addClass('bg-primary').siblings().removeClass('bg-primary');
 });
 
+// QoL feature: if you double click on a server it will connect
 $('#server-table').on('dblclick', '.server-listing-entry', function(event) {
   $(this).addClass('bg-primary').siblings().removeClass('bg-primary');
   connectToServer();

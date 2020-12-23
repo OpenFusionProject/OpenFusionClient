@@ -94,5 +94,5 @@ function showMainWindow() {
     mainWindow.webContents.executeJavaScript("loadServerList();");
   });
 
-  mainWindow.webContents.openDevTools()  
+  //mainWindow.webContents.openDevTools()  
 }
