@@ -17,7 +17,7 @@ function copyFile(src, dst) {
 function initialSetup() {
   // Display a small window to inform the user that the app is working
   setupWindow = new BrowserWindow({width: 275, height: 450, resizable: false, center:true, frame:false});
-  setupWindow.loadUrl('file://' + __dirname + '/files/initialsetup.html');
+  setupWindow.loadUrl('file://' + __dirname + '/initialsetup.html');
   // Exec installUnity.bat and wait for it to finish.
   var child = require('child_process').spawn('cmd.exe', ['/c', 'utils\\installUnity.bat']);
   child.on('exit', function() {
@@ -83,7 +83,7 @@ app.on('ready', function() {
 
 function showMainWindow() {
   // and load the index.html of the app.
-  mainWindow.loadUrl('file://' + __dirname + '/files/index.html');
+  mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   // Reduces white flash when opening the program
   // Eliminating it entirely requires a newer Electron ver :(
