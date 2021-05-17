@@ -1,6 +1,6 @@
 var app = require('app');  // Module to control application life.
 var ipc = require('ipc');
-var fs = require('fs');
+var fs = require('fs-extra');
 var os = require('os');
 var dialog = require('dialog');
 var BrowserWindow = require('browser-window');
@@ -8,81 +8,6 @@ var BrowserWindow = require('browser-window');
 var mainWindow = null;
 
 app.commandLine.appendSwitch('--enable-npapi');
-
-// this should be placed at top of main.js to handle setup events quickly
-if (handleSquirrelEvent()) {
-  // squirrel event handled and app will exit in 1000ms, so don't do anything else
-  return;
-}
-
-function handleSquirrelEvent() {
-  "use strict"
-
-  if (process.argv.length === 1) {
-    return false;
-  }
-
-  const ChildProcess = require('child_process');
-  const path = require('path');
-
-  const appFolder = path.resolve(process.execPath, '..');
-  const rootAtomFolder = path.resolve(appFolder, '..');
-  const updateDotExe = path.resolve(path.join(rootAtomFolder, 'Update.exe'));
-  const exeName = path.basename(process.execPath);
-
-  const spawn = function(command, args) {
-    let spawnedProcess, error;
-
-    try {
-      spawnedProcess = ChildProcess.spawn(command, args, {detached: true});
-    } catch (error) {}
-
-    return spawnedProcess;
-  };
-
-  const spawnUpdate = function(args) {
-    return spawn(updateDotExe, args);
-  };
-
-  const squirrelEvent = process.argv[1];
-  switch (squirrelEvent) {
-    case '--squirrel-install':
-    case '--squirrel-updated':
-      // Optionally do things such as:
-      // - Add your .exe to the PATH
-      // - Write to the registry for things like file associations and
-      //   explorer context menus
-
-      // Install desktop and start menu shortcuts
-      spawnUpdate(['--createShortcut', exeName]);
-
-      setTimeout(app.quit, 1000);
-      return true;
-
-    case '--squirrel-uninstall':
-      // Undo anything you did in the --squirrel-install and
-      // --squirrel-updated handlers
-
-      // Remove desktop and start menu shortcuts
-      spawnUpdate(['--removeShortcut', exeName]);
-
-      setTimeout(app.quit, 1000);
-      return true;
-
-    case '--squirrel-obsolete':
-      // This is called on the outgoing version of your app before
-      // we update to the new version - it's the opposite of
-      // --squirrel-updated
-
-      app.quit();
-      return true;
-  }
-};
-
-// Node version is too old to have a built-in function
-function copyFile(src, dst) {
-  fs.createReadStream(src).pipe(fs.createWriteStream(dst));
-}
 
 function initialSetup() {
   // Display a small window to inform the user that the app is working
@@ -93,9 +18,9 @@ function initialSetup() {
   child.on('exit', function() {
     console.log("Unity installed.");
     // Copy over files with default values
-    copyFile(__dirname+"\\defaults\\config.json", app.getPath('userData')+"\\config.json");
-    copyFile(__dirname+"\\default\\servers.json", app.getPath('userData')+"\\servers.json");
-    copyFile(__dirname+"\\default\\versions.json", app.getPath('userData')+"\\versions.json");
+    copySync(__dirname+"\\defaults\\config.json", app.getPath('userData')+"\\config.json");
+    copySync(__dirname+"\\defaults\\servers.json", app.getPath('userData')+"\\servers.json");
+    copySync(__dirname+"\\defaults\\versions.json", app.getPath('userData')+"\\versions.json");
     console.log("JSON files copied.");
     setupWindow.destroy();
     showMainWindow();
@@ -118,7 +43,7 @@ app.on('ready', function() {
   zip_check = app.getPath('exe').includes(os.tmpdir());
   if (zip_check) {
     errormsg = 
-    ("It has been detected that OpenFusionClient is running from the TEMP folder.\n\n"+
+    ( "It has been detected that OpenFusionClient is running from the TEMP folder.\n\n"+
       "Please extract the entire Client folder to a location of your choice before starting OpenFusionClient.");
     dialog.showErrorBox("Error!", errormsg);
     return;
@@ -152,13 +77,13 @@ app.on('ready', function() {
 });
 
 function showMainWindow() {
-  // and load the index.html of the app.
+  // Load the index.html of the app.
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   // Reduces white flash when opening the program
-  // Eliminating it entirely requires a newer Electron ver :(
   mainWindow.webContents.on('did-finish-load', function() {
     mainWindow.show();
+    // everything's loaded, tell the renderer process to do its thing
     mainWindow.webContents.executeJavaScript("loadConfig();");
     mainWindow.webContents.executeJavaScript("loadGameVersions();");
     mainWindow.webContents.executeJavaScript("loadServerList();");
@@ -170,9 +95,23 @@ function showMainWindow() {
 
   mainWindow.webContents.on('will-navigate', function(evt, url) {
     evt.preventDefault();
-    console.log(url);
+    // TODO: showMessageBox rather than showErrorBox?
+    switch (url) {
+      case "https://audience.fusionfall.com/ff/regWizard.do?_flowId=fusionfall-registration-flow":
+        errormsg = 
+        ( "The register page is currently unimplemented.\n\n"+
+          "You can still create an account: type your desired username and password into the provided boxes and click \"Log In\". "+
+          "Your account will then be automatically created on the server. \nBe sure to remember these details!");
+        dialog.showErrorBox("Sorry!", errormsg);
+        break;
+      case "https://audience.fusionfall.com/ff/login.do":
+        dialog.showErrorBox("Sorry!", "Account management is not available.");
+        break;
+      case "http://forums.fusionfall.com/":
+        require('shell').openExternal("https://discord.gg/DYavckB");
+        break;
+      default:
+        mainWindow.webContents.loadURL(url);
+    }
   });
-
-  //mainWindow.webContents.openDevTools()  
 }
-

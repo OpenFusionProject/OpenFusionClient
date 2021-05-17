@@ -41,5 +41,8 @@
         "to": "utils"
       }
     ]
+  },
+  "dependencies": {
+    "fs-extra": "^0.30.0"
   }
 }

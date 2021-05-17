@@ -1,5 +1,5 @@
 var remote = require("remote");
-var remotefs = remote.require('fs');
+var remotefs = remote.require('fs-extra');
 
 var userdir = remote.require('app').getPath('userData');
 var versionarray
