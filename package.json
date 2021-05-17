@@ -44,8 +44,15 @@
         }
       ]
     },
+    "nsis": {
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
     "files": [
       "!patches${/*}",
+      "!*.php",
+      "!rankurl.txt",
+      "!README.md",
       "!.npmrc"
     ],
     "extraFiles": [
