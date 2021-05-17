@@ -7,8 +7,8 @@
     "postinstall": "npx patch-package && npm explore electron-prebuilt -- npm run postinstall",
     "start": "electron .",
     "build": "node build.js",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "pack": "electron-builder --win --ia32 --dir",
+    "dist": "electron-builder --win --ia32"
   },
   "author": "OpenFusion Contributors",
   "license": "MIT",
@@ -16,6 +16,10 @@
     "electron-prebuilt": "^0.31.2",
     "patch-package": "^6.4.7",
     "electron-builder": "^22.10.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenFusionProject/Client.git"
   },
   "build": {
     "appId": "xyz.openfusion.client",
@@ -28,11 +32,20 @@
     },
     "electronVersion": "0.31.2",
     "win": {
-      "asar": false
+      "asar": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": "ia32"
+        },
+        {
+          "target": "zip",
+          "arch": "ia32"
+        }
+      ]
     },
     "files": [
       "!patches${/*}",
-      "!default_app${/*}",
       "!.npmrc"
     ],
     "extraFiles": [
@@ -40,7 +53,8 @@
         "from": "build/utils",
         "to": "utils"
       }
-    ]
+    ],
+    "afterPack": "./build/delete-default-app.js"
   },
   "dependencies": {
     "fs-extra": "^0.30.0"
