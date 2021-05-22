@@ -97,6 +97,8 @@ function setGameInfo(serverUUID) {
   var gameversion = versionarray.filter(function(obj) {return (obj.name === result.version);})[0];
   window.asseturl = gameversion.url // gameclient.js needs to access this
 
+  // Clear the electron cache to prevent use of cached main.unity3d
+  remote.getCurrentWindow().webContents.session.clearCache(function(){ console.log("Cleared electron cache") });
   remotefs.writeFileSync(__dirname+"\\assetInfo.php", asseturl);
   remotefs.writeFileSync(__dirname+"\\loginInfo.php", result.ip);
 
