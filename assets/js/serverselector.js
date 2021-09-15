@@ -100,12 +100,13 @@ function setGameInfo(serverUUID) {
   var cachedir = userdir + '\\..\\..\\LocalLow\\Unity\\Web Player\\Cache';
   var curversion = cachedir + '\\Fusionfall';
   var newversion = cachedir + '\\' + gameversion.name;
+  var record = userdir + '\\.lastver';
 
   if (remotefs.existsSync(curversion)) {
     // cache already exists
     // find out what version it belongs to
-    if (remotefs.existsSync(userdir + '\\lastver')) {
-      var lastversion = remotefs.readFileSync(userdir + '\\lastver');
+    if (remotefs.existsSync(record)) {
+      var lastversion = remotefs.readFileSync(record);
       remotefs.renameSync(curversion, cachedir + '\\' + lastversion);
       console.log('Cached version ' + lastversion);
     } else {
@@ -122,7 +123,7 @@ function setGameInfo(serverUUID) {
   }
 
   // make note of what version we are launching for next launch
-  remotefs.writeFileSync(userdir + '\\lastver', gameversion.name);
+  remotefs.writeFileSync(record, gameversion.name);
 
   window.asseturl = gameversion.url; // gameclient.js needs to access this
 
