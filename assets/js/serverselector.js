@@ -111,7 +111,7 @@ function setGameInfo(serverUUID) {
       console.log('Cached version ' + lastversion);
     } else {
       console.log(
-        "Couldn't find last version record; cache will get overwritten"
+        "Couldn't find last version record; cache may get overwritten"
       );
     }
   }
