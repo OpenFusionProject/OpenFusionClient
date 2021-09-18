@@ -19,17 +19,17 @@ function initialSetup(firstTime) {
     console.log("Unity installed.");
     if(!firstTime) { // migration from pre-1.4
       // Back everything up, just in case
-      copySync(app.getPath('userData')+"\\config.json", app.getPath('userData')+"\\config.json.bak");
-      copySync(app.getPath('userData')+"\\servers.json", app.getPath('userData')+"\\servers.json.bak");
-      copySync(app.getPath('userData')+"\\versions.json", app.getPath('userData')+"\\versions.json.bak");
+      fs.copySync(app.getPath('userData')+"\\config.json", app.getPath('userData')+"\\config.json.bak");
+      fs.copySync(app.getPath('userData')+"\\servers.json", app.getPath('userData')+"\\servers.json.bak");
+      fs.copySync(app.getPath('userData')+"\\versions.json", app.getPath('userData')+"\\versions.json.bak");
     } else { // first-time setup
       // Copy default servers
-      copySync(__dirname+"\\defaults\\servers.json", app.getPath('userData')+"\\servers.json");
+      fs.copySync(__dirname+"\\defaults\\servers.json", app.getPath('userData')+"\\servers.json");
     }
 
     // Copy default versions and config
-    copySync(__dirname+"\\defaults\\versions.json", app.getPath('userData')+"\\versions.json");
-    copySync(__dirname+"\\defaults\\config.json", app.getPath('userData')+"\\config.json");
+    fs.copySync(__dirname+"\\defaults\\versions.json", app.getPath('userData')+"\\versions.json");
+    fs.copySync(__dirname+"\\defaults\\config.json", app.getPath('userData')+"\\config.json");
     
     console.log("JSON files copied.");
     setupWindow.destroy();
