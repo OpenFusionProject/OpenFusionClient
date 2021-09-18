@@ -80,6 +80,11 @@ body {
   border-color: #6699FF;
 }
 
+#of-editservermodal > .modal-dialog > .modal-content {
+  background-color: #093363;
+  border-color: #6699FF;
+}
+
 #of-deleteservermodal > .modal-dialog > .modal-content {
   background-color: #093363;
   border-color: #6699FF;

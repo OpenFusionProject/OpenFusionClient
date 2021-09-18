@@ -39,6 +39,20 @@ function addServer() {
   loadServerList();
 }
 
+function editServer() {
+  var jsontomodify = JSON.parse(remotefs.readFileSync(userdir+"\\servers.json"));
+  $.each(jsontomodify["servers"], function( key, value ) {
+    if(value["uuid"] == getSelectedServer()) {
+      value['description'] = $("#editserver-descinput").val().length == 0 ? value['description'] : $("#editserver-descinput").val();
+      value['ip'] = $("#editserver-ipinput").val().length == 0 ? value['ip'] : $("#editserver-ipinput").val();
+      value['version'] = $("#editserver-versionselect option:selected").text();
+    }
+  });
+
+  remotefs.writeFileSync(userdir+"\\servers.json", JSON.stringify(jsontomodify, null, 4));
+  loadServerList();
+}
+
 function deleteServer() {
   var jsontomodify = JSON.parse(remotefs.readFileSync(userdir+"\\servers.json"));
   var result = jsontomodify['servers'].filter(function(obj) {return (obj.uuid === getSelectedServer())})[0];
@@ -56,6 +70,7 @@ function loadGameVersions() {
   versionarray = versionjson['versions'];
   $.each(versionarray, function( key, value ) {
     $(new Option(value.name, 'val')).appendTo('#addserver-versionselect');
+    $(new Option(value.name, 'val')).appendTo('#editserver-versionselect');
   });
 }
 
@@ -187,6 +202,25 @@ $('#server-table').on('click', '.server-listing-entry', function(event) {
 $('#server-table').on('dblclick', '.server-listing-entry', function(event) {
   $(this).addClass('bg-primary').siblings().removeClass('bg-primary');
   connectToServer();
+});
+
+$('#of-editservermodal').on('show.bs.modal', function (e) {
+
+  var jsontomodify = JSON.parse(remotefs.readFileSync(userdir+"\\servers.json"));
+  $.each(jsontomodify["servers"], function( key, value ) {
+    if(value["uuid"] == getSelectedServer()) {
+      $("#editserver-descinput")[0].value = value['description'];
+      $("#editserver-ipinput")[0].value = value['ip'];
+      
+      var versionIndex = -1;
+      $.each($("#editserver-versionselect")[0], function( key, val ) {
+        if(val.text === value['version']) {
+          versionIndex = key;
+        }
+      });
+      $("#editserver-versionselect")[0].selectedIndex = versionIndex;
+    }
+  });
 });
 
 $('#of-deleteservermodal').on('show.bs.modal', function (e) {
