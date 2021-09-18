@@ -1,12 +1,11 @@
 locales/
-*.dll
 *.pak
 *.bin
 *.php
 rankurl.txt
-OpenFusionClient.exe
 icudtl.dat
 version
 resources/app/files/rankurl.txt
 node_modules/
 dist/
+UnityBugReporter.exe
