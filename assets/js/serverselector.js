@@ -8,6 +8,8 @@ var serverarray
 function enableServerListButtons() {
   $('#of-connect-button').removeClass('disabled');
   $('#of-connect-button').prop('disabled', false);
+  $('#of-editserver-button').removeClass('disabled');
+  $('#of-editserver-button').prop('disabled', false);
   $('#of-deleteserver-button').removeClass('disabled');
   $('#of-deleteserver-button').prop('disabled', false);
 }
@@ -15,6 +17,8 @@ function enableServerListButtons() {
 function disableServerListButtons() {
   $('#of-connect-button').addClass('disabled');
   $('#of-connect-button').prop('disabled', true);
+  $('#of-editserver-button').addClass('disabled');
+  $('#of-editserver-button').prop('disabled', true);
   $('#of-deleteserver-button').addClass('disabled');
   $('#of-deleteserver-button').prop('disabled', true);
 }
@@ -167,6 +171,12 @@ function connectToServer() {
     }, 200);
   });
 }
+
+// If applicable, deselect currently selected server. 
+function deselectServer() { 
+  disableServerListButtons(); 
+  $(".server-listing-entry").removeClass('bg-primary'); 
+} 
 
 $('#server-table').on('click', '.server-listing-entry', function(event) {
   enableServerListButtons();
