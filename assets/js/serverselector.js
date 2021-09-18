@@ -4,6 +4,7 @@ var remotefs = remote.require('fs-extra');
 var userdir = remote.require('app').getPath('userData');
 var versionarray
 var serverarray
+var config
 
 function enableServerListButtons() {
   $('#of-connect-button').removeClass('disabled');
@@ -56,9 +57,9 @@ function loadGameVersions() {
 }
 
 function loadConfig() {
-    // TODO: actually use these values
-    var configjson = JSON.parse(remotefs.readFileSync(userdir+"\\config.json"));
-  }
+  // load config object globally
+  config = JSON.parse(remotefs.readFileSync(userdir+"\\config.json"));
+}
 
 function loadServerList() {
   var serverjson = JSON.parse(remotefs.readFileSync(userdir+"\\servers.json"));
@@ -96,34 +97,36 @@ function setGameInfo(serverUUID) {
   var result = serverarray.filter(function(obj) {return (obj.uuid === serverUUID);})[0];
   var gameversion = versionarray.filter(function(obj) {return (obj.name === result.version);})[0];
   
-  // Cache folder renaming
-  var cachedir = userdir + '\\..\\..\\LocalLow\\Unity\\Web Player\\Cache';
-  var curversion = cachedir + '\\Fusionfall';
-  var newversion = cachedir + '\\' + gameversion.name;
-  var record = userdir + '\\.lastver';
+  if(config['cache-swapping']) { // if cache swapping property exists AND is `true`, run cache swapping logic
+    // Cache folder renaming
+    var cachedir = userdir + '\\..\\..\\LocalLow\\Unity\\Web Player\\Cache';
+    var curversion = cachedir + '\\Fusionfall';
+    var newversion = cachedir + '\\' + gameversion.name;
+    var record = userdir + '\\.lastver';
 
-  if (remotefs.existsSync(curversion)) {
-    // cache already exists
-    // find out what version it belongs to
-    if (remotefs.existsSync(record)) {
-      var lastversion = remotefs.readFileSync(record);
-      remotefs.renameSync(curversion, cachedir + '\\' + lastversion);
-      console.log('Cached version ' + lastversion);
-    } else {
-      console.log(
-        "Couldn't find last version record; cache may get overwritten"
-      );
+    if (remotefs.existsSync(curversion)) {
+      // cache already exists
+      // find out what version it belongs to
+      if (remotefs.existsSync(record)) {
+        var lastversion = remotefs.readFileSync(record);
+        remotefs.renameSync(curversion, cachedir + '\\' + lastversion);
+        console.log('Cached version ' + lastversion);
+      } else {
+        console.log(
+          "Couldn't find last version record; cache may get overwritten"
+        );
+      }
     }
-  }
 
-  if (remotefs.existsSync(newversion)) {
-    // rename saved cache to FusionFall
-    remotefs.renameSync(newversion, curversion);
-    console.log('Loaded cached ' + gameversion.name);
-  }
+    if (remotefs.existsSync(newversion)) {
+      // rename saved cache to FusionFall
+      remotefs.renameSync(newversion, curversion);
+      console.log('Loaded cached ' + gameversion.name);
+    }
 
-  // make note of what version we are launching for next launch
-  remotefs.writeFileSync(record, gameversion.name);
+    // make note of what version we are launching for next launch
+    remotefs.writeFileSync(record, gameversion.name);
+  }
 
   window.asseturl = gameversion.url; // gameclient.js needs to access this
 
