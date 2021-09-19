@@ -42,9 +42,11 @@
                 <div class="col-4 text-left d-inline-flex justify-content-xl-start">
                     <button class="btn btn-success mr-1" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-addserver-button" type="button" title="Add Server" data-target="#of-addservermodal" onclick="deselectServer()"><i class="fas fa-plus"></i></button>
                     <button class="btn btn-primary mr-1 disabled" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-editserver-button" type="button" title="Edit Server" data-target="#of-editservermodal" disabled=""><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-danger disabled" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-deleteserver-button" type="button" title="Delete Server" data-target="#of-deleteservermodal" disabled=""><i class="fas fa-trash-alt"></i></button>
+                    <button class="btn btn-danger mr-1 disabled" data-toggle="modal" data-bs-tooltip="" data-placement="bottom" id="of-deleteserver-button" type="button" title="Delete Server" data-target="#of-deleteservermodal" disabled=""><i class="fas fa-trash-alt"></i></button>
                 </div>
-                <div class="col-4 d-inline-flex justify-content-end"><button class="btn btn-primary disabled" id="of-connect-button" type="button" onclick="connectToServer()" disabled="">Connect&nbsp;<i class="fas fa-angle-double-right"></i></button></div>
+                <div class="col-4 d-inline-flex justify-content-end">
+                    <button class="btn btn-primary disabled" id="of-connect-button" type="button" onclick="connectToServer()" disabled="">Connect&nbsp;<i class="fas fa-angle-double-right"></i></button>
+                </div>
             </div>
         </div>
         <div class="modal fade" role="dialog" tabindex="-1" id="of-aboutmodal">
@@ -105,7 +107,21 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" role="dialog" tabindex="-1" id="of-restoreserversmodal">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Are you sure?</h4><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="lead">Do you really want to restore the default servers?</p>
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-primary border rounded border-primary" type="button" data-dismiss="modal">Cancel</button><button class="btn btn-primary border rounded border-primary btn-danger border-danger" id="deleteserver-button" type="button" data-dismiss="modal" onclick="restoreDefaultServers();">Yes, Restore</button></div>
+                </div>
+            </div>
+        </div>
         <div id="of-versionnumber"><a class="text-monospace text-secondary" href="#of-aboutmodal" data-toggle="modal" data-target="#of-aboutmodal">v1.3</a></div>
+        <div id="of-restoreservers"><a class="text-monospace text-secondary" href="#of-restoreserversmodal" data-toggle="modal" data-target="#of-restoreserversmodal">Reset to Default Servers</a></div>
     </section>
     <section>
         <div id="client" style="width: 100%;height: 100%;margin: 0;padding: 0;background: #000;clear:both;"></div>
