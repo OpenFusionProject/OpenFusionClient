@@ -9,7 +9,7 @@ var mainWindow = null;
 
 app.commandLine.appendSwitch('--enable-npapi');
 
-function initialSetup() {
+function initialSetup(firstTime) {
   // Display a small window to inform the user that the app is working
   setupWindow = new BrowserWindow({width: 275, height: 450, resizable: false, center:true, frame:false});
   setupWindow.loadUrl('file://' + __dirname + '/initialsetup.html');
@@ -17,10 +17,20 @@ function initialSetup() {
   var child = require('child_process').spawn('cmd.exe', ['/c', 'utils\\installUnity.bat']);
   child.on('exit', function() {
     console.log("Unity installed.");
-    // Copy over files with default values
-    copySync(__dirname+"\\defaults\\config.json", app.getPath('userData')+"\\config.json");
-    copySync(__dirname+"\\defaults\\servers.json", app.getPath('userData')+"\\servers.json");
-    copySync(__dirname+"\\defaults\\versions.json", app.getPath('userData')+"\\versions.json");
+    if(!firstTime) { // migration from pre-1.4
+      // Back everything up, just in case
+      fs.copySync(app.getPath('userData')+"\\config.json", app.getPath('userData')+"\\config.json.bak");
+      fs.copySync(app.getPath('userData')+"\\servers.json", app.getPath('userData')+"\\servers.json.bak");
+      fs.copySync(app.getPath('userData')+"\\versions.json", app.getPath('userData')+"\\versions.json.bak");
+    } else { // first-time setup
+      // Copy default servers
+      fs.copySync(__dirname+"\\defaults\\servers.json", app.getPath('userData')+"\\servers.json");
+    }
+
+    // Copy default versions and config
+    fs.copySync(__dirname+"\\defaults\\versions.json", app.getPath('userData')+"\\versions.json");
+    fs.copySync(__dirname+"\\defaults\\config.json", app.getPath('userData')+"\\config.json");
+    
     console.log("JSON files copied.");
     setupWindow.destroy();
     showMainWindow();
@@ -54,12 +64,19 @@ app.on('ready', function() {
   mainWindow.setMinimumSize(640, 480);
 
   // Check for first run
+  var configPath = app.getPath('userData') + "\\config.json";
   try {
-    if (!fs.existsSync(app.getPath('userData')+"\\config.json")) {
+    if (!fs.existsSync(configPath)) {
       console.log("Config file not found. Running initial setup.");
-      initialSetup();
+      initialSetup(true);
     } else {
-      showMainWindow();
+      var config = fs.readJsonSync(configPath);
+      if(!config['last-version-initialized']) {
+        console.log("Pre-1.4 config detected. Running migration.");
+        initialSetup(false);
+      } else {
+        showMainWindow();
+      }
     }
   } catch(e) {
     console.log("An error occurred while checking for the config.");
