@@ -8,6 +8,8 @@ var serverarray
 function enableServerListButtons() {
   $('#of-connect-button').removeClass('disabled');
   $('#of-connect-button').prop('disabled', false);
+  $('#of-editserver-button').removeClass('disabled');
+  $('#of-editserver-button').prop('disabled', false);
   $('#of-deleteserver-button').removeClass('disabled');
   $('#of-deleteserver-button').prop('disabled', false);
 }
@@ -15,6 +17,8 @@ function enableServerListButtons() {
 function disableServerListButtons() {
   $('#of-connect-button').addClass('disabled');
   $('#of-connect-button').prop('disabled', true);
+  $('#of-editserver-button').addClass('disabled');
+  $('#of-editserver-button').prop('disabled', true);
   $('#of-deleteserver-button').addClass('disabled');
   $('#of-deleteserver-button').prop('disabled', true);
 }
@@ -35,6 +39,20 @@ function addServer() {
   loadServerList();
 }
 
+function editServer() {
+  var jsontomodify = JSON.parse(remotefs.readFileSync(userdir+"\\servers.json"));
+  $.each(jsontomodify["servers"], function( key, value ) {
+    if(value["uuid"] == getSelectedServer()) {
+      value['description'] = $("#editserver-descinput").val().length == 0 ? value['description'] : $("#editserver-descinput").val();
+      value['ip'] = $("#editserver-ipinput").val().length == 0 ? value['ip'] : $("#editserver-ipinput").val();
+      value['version'] = $("#editserver-versionselect option:selected").text();
+    }
+  });
+
+  remotefs.writeFileSync(userdir+"\\servers.json", JSON.stringify(jsontomodify, null, 4));
+  loadServerList();
+}
+
 function deleteServer() {
   var jsontomodify = JSON.parse(remotefs.readFileSync(userdir+"\\servers.json"));
   var result = jsontomodify['servers'].filter(function(obj) {return (obj.uuid === getSelectedServer())})[0];
@@ -47,11 +65,17 @@ function deleteServer() {
   loadServerList();
 }
 
+function restoreDefaultServers() {
+  remotefs.copySync(__dirname+"\\defaults\\servers.json", userdir+"\\servers.json");
+  loadServerList();
+}
+
 function loadGameVersions() {
   var versionjson = JSON.parse(remotefs.readFileSync(userdir+"\\versions.json"));
   versionarray = versionjson['versions'];
   $.each(versionarray, function( key, value ) {
     $(new Option(value.name, 'val')).appendTo('#addserver-versionselect');
+    $(new Option(value.name, 'val')).appendTo('#editserver-versionselect');
   });
 }
 
@@ -168,6 +192,12 @@ function connectToServer() {
   });
 }
 
+// If applicable, deselect currently selected server. 
+function deselectServer() { 
+  disableServerListButtons(); 
+  $(".server-listing-entry").removeClass('bg-primary'); 
+} 
+
 $('#server-table').on('click', '.server-listing-entry', function(event) {
   enableServerListButtons();
   $(this).addClass('bg-primary').siblings().removeClass('bg-primary');
@@ -177,6 +207,25 @@ $('#server-table').on('click', '.server-listing-entry', function(event) {
 $('#server-table').on('dblclick', '.server-listing-entry', function(event) {
   $(this).addClass('bg-primary').siblings().removeClass('bg-primary');
   connectToServer();
+});
+
+$('#of-editservermodal').on('show.bs.modal', function (e) {
+
+  var jsontomodify = JSON.parse(remotefs.readFileSync(userdir+"\\servers.json"));
+  $.each(jsontomodify["servers"], function( key, value ) {
+    if(value["uuid"] == getSelectedServer()) {
+      $("#editserver-descinput")[0].value = value['description'];
+      $("#editserver-ipinput")[0].value = value['ip'];
+      
+      var versionIndex = -1;
+      $.each($("#editserver-versionselect")[0], function( key, val ) {
+        if(val.text === value['version']) {
+          versionIndex = key;
+        }
+      });
+      $("#editserver-versionselect")[0].selectedIndex = versionIndex;
+    }
+  });
 });
 
 $('#of-deleteservermodal').on('show.bs.modal', function (e) {
