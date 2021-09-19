@@ -65,6 +65,11 @@ function deleteServer() {
   loadServerList();
 }
 
+function restoreDefaultServers() {
+  remotefs.copySync(__dirname+"\\defaults\\servers.json", userdir+"\\servers.json");
+  loadServerList();
+}
+
 function loadGameVersions() {
   var versionjson = JSON.parse(remotefs.readFileSync(userdir+"\\versions.json"));
   versionarray = versionjson['versions'];
