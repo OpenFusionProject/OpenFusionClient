@@ -60,12 +60,6 @@ body {
     right: 8px;
 }
 
-#of-restoreservers {
-    position: fixed;
-    bottom: 4px;
-    left: 8px;
-}
-
 .btn-primary {
     background-image: url('../../assets/img/btn-primary-bg.png');
     background-repeat: repeat;
