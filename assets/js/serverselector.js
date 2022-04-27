@@ -1,5 +1,6 @@
 var remote = require("remote");
 var remotefs = remote.require('fs-extra');
+var dns = remote.require('dns');
 
 var userdir = remote.require('app').getPath('userData');
 var versionarray
@@ -167,22 +168,35 @@ function setGameInfo(serverUUID) {
     address = result.ip
     port = 23000 // default
   }
-  remotefs.writeFileSync(__dirname+"\\loginInfo.php", address + ":" + port);
 
-  if (result.hasOwnProperty('endpoint')) {
-    var httpendpoint = result.endpoint.replace("https://", "http://")
-    remotefs.writeFileSync(__dirname+"\\rankurl.txt", httpendpoint+"getranks");
-    // Write these out too
-    remotefs.writeFileSync(__dirname+"\\sponsor.php", httpendpoint+"upsell/sponsor.png");
-    remotefs.writeFileSync(__dirname+"\\images.php", httpendpoint+"upsell/");
-  } else {
-    // Remove/default the endpoint related stuff, this server won't be using it
-    if (remotefs.existsSync(__dirname+"\\rankurl.txt")) {
-      remotefs.unlinkSync(__dirname+"\\rankurl.txt");
-      remotefs.writeFileSync(__dirname+"\\sponsor.php", "assets/img/welcome.png");
-      remotefs.writeFileSync(__dirname+"\\images.php", "assets/img/");
+  // DNS resolution. there is no synchronous version unfortunately
+  // if the resolution fails, keep the original entry (includes plain IP cases)
+  var ip = address;
+  dns.resolve4(address, function(err, res) {
+    if(!err) {
+      ip = res[0];
+      console.log("Resolved " + address + " to " + ip);
     }
-  }
+
+    var fullAddress = ip + ":" + port;
+    console.log("Will connect to " + fullAddress);
+    remotefs.writeFileSync(__dirname+"\\loginInfo.php", fullAddress);
+
+    if (result.hasOwnProperty('endpoint')) {
+      var httpendpoint = result.endpoint.replace("https://", "http://")
+      remotefs.writeFileSync(__dirname+"\\rankurl.txt", httpendpoint+"getranks");
+      // Write these out too
+      remotefs.writeFileSync(__dirname+"\\sponsor.php", httpendpoint+"upsell/sponsor.png");
+      remotefs.writeFileSync(__dirname+"\\images.php", httpendpoint+"upsell/");
+    } else {
+      // Remove/default the endpoint related stuff, this server won't be using it
+      if (remotefs.existsSync(__dirname+"\\rankurl.txt")) {
+        remotefs.unlinkSync(__dirname+"\\rankurl.txt");
+        remotefs.writeFileSync(__dirname+"\\sponsor.php", "assets/img/welcome.png");
+        remotefs.writeFileSync(__dirname+"\\images.php", "assets/img/");
+      }
+    }
+  });
 }
 
 // Returns the UUID of the server with the selected background color.
