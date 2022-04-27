@@ -155,7 +155,19 @@ function setGameInfo(serverUUID) {
   window.asseturl = gameversion.url; // gameclient.js needs to access this
 
   remotefs.writeFileSync(__dirname+"\\assetInfo.php", asseturl);
-  remotefs.writeFileSync(__dirname+"\\loginInfo.php", result.ip);
+
+  // Server address parsing
+  var address;
+  var port;
+  var sepPos = result.ip.indexOf(":");
+  if (sepPos > -1) {
+    address = result.ip.substr(0, sepPos);
+    port = result.ip.substr(sepPos + 1);
+  } else {
+    address = result.ip
+    port = 23000 // default
+  }
+  remotefs.writeFileSync(__dirname+"\\loginInfo.php", address + ":" + port);
 
   if (result.hasOwnProperty('endpoint')) {
     var httpendpoint = result.endpoint.replace("https://", "http://")
