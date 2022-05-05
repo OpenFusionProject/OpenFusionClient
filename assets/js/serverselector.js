@@ -1,5 +1,6 @@
 var remote = require("remote");
 var remotefs = remote.require('fs-extra');
+var dns = remote.require('dns');
 
 var userdir = remote.require('app').getPath('userData');
 var versionarray
@@ -155,8 +156,6 @@ function setGameInfo(serverUUID) {
   window.asseturl = gameversion.url; // gameclient.js needs to access this
 
   remotefs.writeFileSync(__dirname+"\\assetInfo.php", asseturl);
-  remotefs.writeFileSync(__dirname+"\\loginInfo.php", result.ip);
-
   if (result.hasOwnProperty('endpoint')) {
     var httpendpoint = result.endpoint.replace("https://", "http://")
     remotefs.writeFileSync(__dirname+"\\rankurl.txt", httpendpoint+"getranks");
@@ -171,6 +170,40 @@ function setGameInfo(serverUUID) {
       remotefs.writeFileSync(__dirname+"\\images.php", "assets/img/");
     }
   }
+
+  // Server address parsing
+  var address;
+  var port;
+  var sepPos = result.ip.indexOf(":");
+  if (sepPos > -1) {
+    address = result.ip.substr(0, sepPos);
+    port = result.ip.substr(sepPos + 1);
+  } else {
+    address = result.ip
+    port = 23000 // default
+  }
+
+  // DNS resolution. there is no synchronous version for some stupid reason
+  if(!address.match(/^[0-9.]+$/)) dns.resolve4(address, function(err, res) {
+    if(!err) {
+      console.log("Resolved " + address + " to " + res[0]);
+      address = res[0];
+    } else {
+      console.log("Err: " + err.code);
+    }
+    prepConnection(address, port);
+  });
+  else {
+    console.log(address + " is an IP; skipping DNS lookup");
+    prepConnection(address, port);
+  }
+}
+
+function prepConnection(address, port) {
+  var full = address + ":" + port;
+  console.log("Will connect to " + full);
+  remotefs.writeFileSync(__dirname+"\\loginInfo.php", full);
+  launchGame();
 }
 
 // Returns the UUID of the server with the selected background color.
@@ -190,7 +223,6 @@ function connectToServer() {
     setTimeout(function(){
       $('body,html').css('pointer-events','');
       setGameInfo(getSelectedServer());
-      launchGame();
     }, 200);
   });
 }
