@@ -40,11 +40,11 @@ function onResize() {
 }
 
 function launchGame() {
-  gameRunning = true
+  gameRunning = true;
 
   var sel = document.getElementById("of-serverselector");
-  sel.remove()
-  
+  sel.remove();
+
   document.body.style.overflow = "hidden";
 
   var object = document.createElement('object');
@@ -75,6 +75,6 @@ function launchGame() {
   var div = document.getElementById('client');
   object.appendChild(embed);
   div.appendChild(object);
-  document.title = "OpenFusion"
+  document.title = "OpenFusion";
   onResize();
 }

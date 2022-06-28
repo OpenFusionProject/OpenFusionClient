@@ -3,9 +3,9 @@ var remotefs = remote.require('fs-extra');
 var dns = remote.require('dns');
 
 var userdir = remote.require('app').getPath('userData');
-var versionarray
-var serverarray
-var config
+var versionarray;
+var serverarray;
+var config;
 
 function enableServerListButtons() {
   $('#of-connect-button').removeClass('disabled');
@@ -35,7 +35,7 @@ function addServer() {
   server['version'] = $("#addserver-versionselect option:selected").text();
   //server['endpoint'] = 
 
-  jsontomodify['servers'].push(server)
+  jsontomodify['servers'].push(server);
 
   remotefs.writeFileSync(userdir+"\\servers.json", JSON.stringify(jsontomodify, null, 4));
   loadServerList();
@@ -99,13 +99,13 @@ function loadServerList() {
     $.each(serverarray, function( key, value ) {
       // Create the row, and populate the cells
       var row = document.createElement('tr');
-      row.className = 'server-listing-entry'
+      row.className = 'server-listing-entry';
       row.setAttribute('id', value.uuid);
       var cellName = document.createElement('td');
-      cellName.textContent = value.description
+      cellName.textContent = value.description;
       var cellVersion = document.createElement('td');
-      cellVersion.textContent = value.version
-      cellVersion.className = 'text-monospace'
+      cellVersion.textContent = value.version;
+      cellVersion.className = 'text-monospace';
 
       row.appendChild(cellName);
       row.appendChild(cellVersion);
@@ -121,7 +121,7 @@ function loadServerList() {
 function setGameInfo(serverUUID) {
   var result = serverarray.filter(function(obj) {return (obj.uuid === serverUUID);})[0];
   var gameversion = versionarray.filter(function(obj) {return (obj.name === result.version);})[0];
-  
+
   if(config['cache-swapping']) { // if cache swapping property exists AND is `true`, run cache swapping logic
     // Cache folder renaming
     var cachedir = userdir + '\\..\\..\\LocalLow\\Unity\\Web Player\\Cache';
@@ -157,7 +157,7 @@ function setGameInfo(serverUUID) {
 
   remotefs.writeFileSync(__dirname+"\\assetInfo.php", asseturl);
   if (result.hasOwnProperty('endpoint')) {
-    var httpendpoint = result.endpoint.replace("https://", "http://")
+    var httpendpoint = result.endpoint.replace("https://", "http://");
     remotefs.writeFileSync(__dirname+"\\rankurl.txt", httpendpoint+"getranks");
     // Write these out too
     remotefs.writeFileSync(__dirname+"\\sponsor.php", httpendpoint+"upsell/sponsor.png");
@@ -179,7 +179,7 @@ function setGameInfo(serverUUID) {
     address = result.ip.substr(0, sepPos);
     port = result.ip.substr(sepPos + 1);
   } else {
-    address = result.ip
+    address = result.ip;
     port = 23000 // default
   }
 
@@ -227,11 +227,11 @@ function connectToServer() {
   });
 }
 
-// If applicable, deselect currently selected server. 
-function deselectServer() { 
-  disableServerListButtons(); 
-  $(".server-listing-entry").removeClass('bg-primary'); 
-} 
+// If applicable, deselect currently selected server.
+function deselectServer() {
+  disableServerListButtons();
+  $(".server-listing-entry").removeClass('bg-primary');
+}
 
 $('#server-table').on('click', '.server-listing-entry', function(event) {
   enableServerListButtons();
@@ -251,7 +251,7 @@ $('#of-editservermodal').on('show.bs.modal', function (e) {
     if(value["uuid"] == getSelectedServer()) {
       $("#editserver-descinput")[0].value = value['description'];
       $("#editserver-ipinput")[0].value = value['ip'];
-      
+
       var versionIndex = -1;
       $.each($("#editserver-versionselect")[0], function( key, val ) {
         if(val.text === value['version']) {
