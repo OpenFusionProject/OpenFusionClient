@@ -8,7 +8,8 @@
 		"start": "electron .",
 		"build": "node build.js",
 		"pack": "electron-builder --win --ia32 --dir",
-		"dist": "electron-builder --win --ia32"
+		"dist": "electron-builder --win --ia32",
+		"prettier": "npx prettier --write ."
 	},
 	"author": "OpenFusion Contributors",
 	"license": "MIT",
