@@ -1,108 +1,108 @@
 {
-    "versions": [
-        {
-            "name": "beta-20100104",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100104/"
-        },
-        {
-            "name": "beta-20100119",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100119/"
-        },
-        {
-            "name": "beta-20100207",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100207/"
-        },
-        {
-            "name": "beta-20100307",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100307/"
-        },
-        {
-            "name": "beta-20100322",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100322/"
-        },
-        {
-            "name": "beta-20100413",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100413/"
-        },
-        {
-            "name": "beta-20100502",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100502/"
-        },
-        {
-            "name": "beta-20100524",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100524/"
-        },
-        {
-            "name": "beta-20100604",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100604/"
-        },
-        {
-            "name": "beta-20100616",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100616/"
-        },
-        {
-            "name": "beta-20100711",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100711/"
-        },
-        {
-            "name": "beta-20100728",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100728/"
-        },
-        {
-            "name": "beta-20100909",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100909/"
-        },
-        {
-            "name": "beta-20101003",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101003/"
-        },
-        {
-            "name": "beta-20101011",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101011/"
-        },
-        {
-            "name": "beta-20101028",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101028/"
-        },
-        {
-            "name": "beta-20101123",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101123/"
-        },
-        {
-            "name": "beta-20110213",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110213/"
-        },
-        {
-            "name": "beta-20110314",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110314/"
-        },
-        {
-            "name": "beta-20110330",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110330/"
-        },
-        {
-            "name": "beta-20110424",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110424/"
-        },
-        {
-            "name": "beta-20110523",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110523/"
-        },
-        {
-            "name": "beta-20110725",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110725/"
-        },
-        {
-            "name": "beta-20110818",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110818/"
-        },
-        {
-            "name": "beta-20110912",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110912/"
-        },
-        {
-            "name": "beta-20111013",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20111013/"
-        }
-    ]
+	"versions": [
+		{
+			"name": "beta-20100104",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100104/"
+		},
+		{
+			"name": "beta-20100119",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100119/"
+		},
+		{
+			"name": "beta-20100207",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100207/"
+		},
+		{
+			"name": "beta-20100307",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100307/"
+		},
+		{
+			"name": "beta-20100322",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100322/"
+		},
+		{
+			"name": "beta-20100413",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100413/"
+		},
+		{
+			"name": "beta-20100502",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100502/"
+		},
+		{
+			"name": "beta-20100524",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100524/"
+		},
+		{
+			"name": "beta-20100604",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100604/"
+		},
+		{
+			"name": "beta-20100616",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100616/"
+		},
+		{
+			"name": "beta-20100711",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100711/"
+		},
+		{
+			"name": "beta-20100728",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100728/"
+		},
+		{
+			"name": "beta-20100909",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20100909/"
+		},
+		{
+			"name": "beta-20101003",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20101003/"
+		},
+		{
+			"name": "beta-20101011",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20101011/"
+		},
+		{
+			"name": "beta-20101028",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20101028/"
+		},
+		{
+			"name": "beta-20101123",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20101123/"
+		},
+		{
+			"name": "beta-20110213",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110213/"
+		},
+		{
+			"name": "beta-20110314",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110314/"
+		},
+		{
+			"name": "beta-20110330",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110330/"
+		},
+		{
+			"name": "beta-20110424",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110424/"
+		},
+		{
+			"name": "beta-20110523",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110523/"
+		},
+		{
+			"name": "beta-20110725",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110725/"
+		},
+		{
+			"name": "beta-20110818",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110818/"
+		},
+		{
+			"name": "beta-20110912",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20110912/"
+		},
+		{
+			"name": "beta-20111013",
+			"url": "http://cdn.dexlabs.systems/ff/big/beta-20111013/"
+		}
+	]
 }
