@@ -1,71 +1,71 @@
 {
-	"name": "openfusionclient",
-	"version": "1.4.0",
-	"description": "OpenFusionClient",
-	"main": "index.js",
-	"scripts": {
-		"postinstall": "npx patch-package && npm explore electron-prebuilt -- npm run postinstall",
-		"start": "electron .",
-		"build": "node build.js",
-		"pack": "electron-builder --win --ia32 --dir",
-		"dist": "electron-builder --win --ia32",
-		"prettier": "npx prettier --write ."
-	},
-	"author": "OpenFusion Contributors",
-	"license": "MIT",
-	"devDependencies": {
-		"electron-builder": "^22.10.5",
-		"electron-prebuilt": "^0.31.2",
-		"patch-package": "^6.4.7",
-		"prettier": "^2.7.1"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/OpenFusionProject/Client.git"
-	},
-	"build": {
-		"appId": "xyz.openfusion.client",
-		"productName": "OpenFusionClient",
-		"copyright": "© 2020-2022 OpenFusion Contributors",
-		"electronDownload": {
-			"version": "0.31.2",
-			"platform": "win32",
-			"arch": "ia32"
-		},
-		"electronVersion": "0.31.2",
-		"win": {
-			"asar": false,
-			"target": [
-				{
-					"target": "nsis",
-					"arch": "ia32"
-				},
-				{
-					"target": "zip",
-					"arch": "ia32"
-				}
-			]
-		},
-		"nsis": {
-			"createDesktopShortcut": true,
-			"createStartMenuShortcut": true
-		},
-		"files": [
-			"!patches${/*}",
-			"!*.php",
-			"!rankurl.txt",
-			"!README.md",
-			"!.npmrc"
-		],
-		"extraFiles": [
-			{
-				"from": "build/utils",
-				"to": "utils"
-			}
-		],
-		"afterPack": "./build/delete-default-app.js"
-	},
-	"dependencies": {
-		"fs-extra": "^0.30.0"
-	}
+    "name": "openfusionclient",
+    "version": "1.4.0",
+    "description": "OpenFusionClient",
+    "main": "index.js",
+    "scripts": {
+        "postinstall": "npx patch-package && npm explore electron-prebuilt -- npm run postinstall",
+        "start": "electron .",
+        "build": "node build.js",
+        "pack": "electron-builder --win --ia32 --dir",
+        "dist": "electron-builder --win --ia32",
+        "prettier": "npx prettier --write ."
+    },
+    "author": "OpenFusion Contributors",
+    "license": "MIT",
+    "devDependencies": {
+        "electron-builder": "^22.10.5",
+        "electron-prebuilt": "^0.31.2",
+        "patch-package": "^6.4.7",
+        "prettier": "^2.7.1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/OpenFusionProject/Client.git"
+    },
+    "build": {
+        "appId": "xyz.openfusion.client",
+        "productName": "OpenFusionClient",
+        "copyright": "© 2020-2022 OpenFusion Contributors",
+        "electronDownload": {
+            "version": "0.31.2",
+            "platform": "win32",
+            "arch": "ia32"
+        },
+        "electronVersion": "0.31.2",
+        "win": {
+            "asar": false,
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": "ia32"
+                },
+                {
+                    "target": "zip",
+                    "arch": "ia32"
+                }
+            ]
+        },
+        "nsis": {
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true
+        },
+        "files": [
+            "!patches${/*}",
+            "!*.php",
+            "!rankurl.txt",
+            "!README.md",
+            "!.npmrc"
+        ],
+        "extraFiles": [
+            {
+                "from": "build/utils",
+                "to": "utils"
+            }
+        ],
+        "afterPack": "./build/delete-default-app.js"
+    },
+    "dependencies": {
+        "fs-extra": "^0.30.0"
+    }
 }
