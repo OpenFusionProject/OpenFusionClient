@@ -7,5 +7,6 @@
 	"bracketSameLine": false,
 	"bracketSpacing": true,
 	"jsxSingleQuote": false,
-	"quoteProps": "as-needed"
+	"quoteProps": "as-needed",
+	"endOfLine": "lf"
 }
