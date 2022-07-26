@@ -7,13 +7,13 @@ var christmasBegin = new Date(today.getFullYear(), 11, 23);
 var christmasEnd = new Date(today.getFullYear(), 12, 8);
 var sf;
 
-if((today >= christmasBegin && today <= christmasEnd)) {
-	console.log("Christmas Activated.");
-	sf = new Snowflakes({zIndex: -100});
+if (today >= christmasBegin && today <= christmasEnd) {
+    console.log("Christmas Activated.");
+    sf = new Snowflakes({ zIndex: -100 });
 }
 
-function stopEasterEggs(){
-	if (sf != null) {
-		sf.destroy();
-	}
+function stopEasterEggs() {
+    if (sf != null) {
+        sf.destroy();
+    }
 }
