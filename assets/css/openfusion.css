@@ -49,9 +49,9 @@ img {
 body {
     user-select: none;
     background-color: #000;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-        'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
+        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 #of-versionnumber {
@@ -61,17 +61,17 @@ body {
 }
 
 .btn-primary {
-    background-image: url('../../assets/img/btn-primary-bg.png');
+    background-image: url("../../assets/img/btn-primary-bg.png");
     background-repeat: repeat;
 }
 
 .btn-success {
-    background-image: url('../../assets/img/btn-success-bg.png');
+    background-image: url("../../assets/img/btn-success-bg.png");
     background-repeat: repeat;
 }
 
 .btn-danger {
-    background-image: url('../../assets/img/btn-danger-bg.png');
+    background-image: url("../../assets/img/btn-danger-bg.png");
     background-repeat: repeat;
 }
 
