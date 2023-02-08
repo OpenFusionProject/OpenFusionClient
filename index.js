@@ -9,6 +9,38 @@ var mainWindow = null;
 
 app.commandLine.appendSwitch("--enable-npapi");
 
+function verifyUnity() {
+    console.log("Unimplemented!");
+    return false;
+}
+
+function installUnity(callback) {
+    var utilsdir = __dirname + "\\..\\..\\utils";
+
+    // if running in non-packaged / development mode, this dir will be slightly different
+    if (process.env.npm_node_execpath) {
+        utilsdir = app.getAppPath() + "\\build\\utils";
+    }
+
+    // run the installer silently
+    var child = require("child_process").spawn(
+        utilsdir + "\\UnityWebPlayer.exe",
+        ["/quiet", "/S"]
+    );
+    child.on("exit", function () {
+        // overwrite 3.5.2 loader/player with FF's custom version
+        var dstfolder =
+            process.env.USERPROFILE + "\\AppData\\LocalLow\\Unity\\WebPlayer";
+        fs.copySync(utilsdir + "\\WebPlayer", dstfolder, {
+            clobber: true,
+        });
+        // avoids error reporter popping up when closing Electron
+        fs.removeSync(dstfolder + "\\UnityBugReporter.exe");
+        console.log("Unity Web Player installed successfully.");
+        callback();
+    });
+}
+
 function initialSetup(firstTime) {
     // Display a small window to inform the user that the app is working
     setupWindow = new BrowserWindow({
@@ -19,13 +51,7 @@ function initialSetup(firstTime) {
         frame: false,
     });
     setupWindow.loadUrl("file://" + __dirname + "/initialsetup.html");
-    // Exec installUnity.bat and wait for it to finish.
-    var child = require("child_process").spawn("cmd.exe", [
-        "/c",
-        "utils\\installUnity.bat",
-    ]);
-    child.on("exit", function () {
-        console.log("Unity installed.");
+    installUnity(function () {
         if (!firstTime) {
             // migration from pre-1.4
             // Back everything up, just in case
