@@ -110,8 +110,8 @@ app.on("ready", function () {
                 showMainWindow();
             }
         }
-    } catch (e) {
-        console.log("An error occurred while checking for the config.");
+    } catch (ex) {
+        console.log("An error occurred while checking for the config");
     }
 
     // Makes it so external links are opened in the system browser, not Electron

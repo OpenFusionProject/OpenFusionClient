@@ -155,6 +155,50 @@ function loadServerList() {
     }
 }
 
+function performCacheSwap(newversion) {
+    var cacheroot = userdir + "\\..\\..\\LocalLow\\Unity\\Web Player\\Cache";
+    var currentcache = cacheroot + "\\Fusionfall";
+    var newcache = cacheroot + "\\" + newversion;
+    var record = userdir + "\\.lastver";
+
+    // if cache renaming would result in a no-op (ex. launching the same version
+    // two times), then skip it. this avoids permissions errors with multiple clients
+    // (file/folder is already open in another process)
+    var skip = false;
+
+    if (remotefs.existsSync(currentcache)) {
+        // cache already exists, find out what version it belongs to
+        if (remotefs.existsSync(record)) {
+            lastversion = remotefs.readFileSync(record);
+            if (lastversion != newversion) {
+                remotefs.renameSync(
+                    currentcache,
+                    cacheroot + "\\" + lastversion
+                );
+            } else {
+                console.log(
+                    "Cached version unchanged, renaming will be skipped"
+                );
+                skip = true;
+            }
+            console.log("Current cache is " + lastversion);
+        } else {
+            console.log(
+                "Couldn't find last version record; cache may get overwritten"
+            );
+        }
+    }
+
+    if (remotefs.existsSync(newcache) || !skip) {
+        // rename saved cache to FusionFall
+        remotefs.renameSync(newcache, currentcache);
+        console.log("Current cache swapped to " + newversion);
+    }
+
+    // make note of what version we are launching for next launch
+    remotefs.writeFileSync(record, newversion);
+}
+
 // For writing loginInfo.php, assetInfo.php, etc.
 function setGameInfo(serverUUID) {
     var result = serverarray.filter(function (obj) {
@@ -164,36 +208,15 @@ function setGameInfo(serverUUID) {
         return obj.name === result.version;
     })[0];
 
+    // if cache swapping property exists AND is `true`, run cache swapping logic
     if (config["cache-swapping"]) {
-        // if cache swapping property exists AND is `true`, run cache swapping logic
-        // Cache folder renaming
-        var cachedir = userdir + "\\..\\..\\LocalLow\\Unity\\Web Player\\Cache";
-        var curversion = cachedir + "\\Fusionfall";
-        var newversion = cachedir + "\\" + gameversion.name;
-        var record = userdir + "\\.lastver";
-
-        if (remotefs.existsSync(curversion)) {
-            // cache already exists
-            // find out what version it belongs to
-            if (remotefs.existsSync(record)) {
-                var lastversion = remotefs.readFileSync(record);
-                remotefs.renameSync(curversion, cachedir + "\\" + lastversion);
-                console.log("Cached version " + lastversion);
-            } else {
-                console.log(
-                    "Couldn't find last version record; cache may get overwritten"
-                );
-            }
+        try {
+            performCacheSwap(gameversion.name);
+        } catch (ex) {
+            console.log(
+                "Error when swapping cache, it may get overwritten:\n" + ex
+            );
         }
-
-        if (remotefs.existsSync(newversion)) {
-            // rename saved cache to FusionFall
-            remotefs.renameSync(newversion, curversion);
-            console.log("Loaded cached " + gameversion.name);
-        }
-
-        // make note of what version we are launching for next launch
-        remotefs.writeFileSync(record, gameversion.name);
     }
 
     window.asseturl = gameversion.url; // gameclient.js needs to access this
