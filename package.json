@@ -1,5 +1,5 @@
 {
-    "name": "openfusionclient",
+    "name": "OpenFusionClient",
     "version": "1.4.0",
     "description": "OpenFusionClient",
     "main": "index.js",
@@ -14,9 +14,9 @@
     "author": "OpenFusion Contributors",
     "license": "MIT",
     "devDependencies": {
-        "electron-builder": "^22.10.5",
+        "electron-builder": "^22.14.13",
         "electron-prebuilt": "^0.31.2",
-        "patch-package": "^6.4.7",
+        "patch-package": "^6.5.1",
         "prettier": "^2.7.1"
     },
     "repository": {
@@ -26,7 +26,7 @@
     "build": {
         "appId": "xyz.openfusion.client",
         "productName": "OpenFusionClient",
-        "copyright": "© 2020-2022 OpenFusion Contributors",
+        "copyright": "© 2020-2023 OpenFusion Contributors",
         "electronDownload": {
             "version": "0.31.2",
             "platform": "win32",
