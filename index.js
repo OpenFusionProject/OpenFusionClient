@@ -10,7 +10,20 @@ var mainWindow = null;
 app.commandLine.appendSwitch("--enable-npapi");
 
 function verifyUnity() {
-    console.log("Unimplemented!");
+    var dllpath =
+        app.getPath("appData") +
+        "\\..\\LocalLow\\Unity\\WebPlayer\\player\\fusion-2.x.x\\webplayer_win.dll";
+
+    if (fs.existsSync(dllpath)) {
+        var buff = fs.readFileSync(dllpath);
+        var hash = require("crypto")
+            .createHash("md5")
+            .update(buff)
+            .digest("hex");
+        if (hash == "e5028405b4483de9e5e5fe9cd5f1e98f") {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -30,7 +43,7 @@ function installUnity(callback) {
     child.on("exit", function () {
         // overwrite 3.5.2 loader/player with FF's custom version
         var dstfolder =
-            process.env.USERPROFILE + "\\AppData\\LocalLow\\Unity\\WebPlayer";
+            app.getPath("appData") + "..\\LocalLow\\Unity\\WebPlayer";
         fs.copySync(utilsdir + "\\WebPlayer", dstfolder, {
             clobber: true,
         });
@@ -133,7 +146,11 @@ app.on("ready", function () {
                 console.log("Pre-1.4 config detected. Running migration.");
                 initialSetup(false);
             } else {
-                showMainWindow();
+                if (verifyUnity()) {
+                    showMainWindow();
+                } else {
+                    installUnity(showMainWindow);
+                }
             }
         }
     } catch (ex) {
