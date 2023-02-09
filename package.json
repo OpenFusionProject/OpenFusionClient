@@ -67,7 +67,10 @@
                 "to": "utils"
             }
         ],
-        "afterPack": "./build/delete-default-app.js"
+        "afterPack": [
+            "./build/4gb-patch.js",
+            "./build/delete-default-app.js"
+        ]
     },
     "dependencies": {
         "fs-extra": "^0.30.0"
