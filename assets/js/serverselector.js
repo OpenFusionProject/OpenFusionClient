@@ -25,6 +25,23 @@ function disableServerListButtons() {
     $("#of-deleteserver-button").prop("disabled", true);
 }
 
+function getAppVersion() {
+  appversion = remote.require("app").getVersion();
+  
+  // simplify version, ex. 1.4.0 -> 1.4, 
+  // but only if a revision number isn't present
+  if(appversion.endsWith(".0")){
+    return appversion.substr(0, appversion.length - 2)
+  } else {
+    return appversion
+  }
+}
+
+function setAppVersionText() {
+  $("#of-aboutversionnumber").text("Version " + getAppVersion());
+  $("#of-versionnumber").text("v" + getAppVersion());
+}
+
 function addServer() {
     var jsontomodify = JSON.parse(
         remotefs.readFileSync(userdir + "\\servers.json")

@@ -174,6 +174,7 @@ function showMainWindow() {
 
     // Reduces white flash when opening the program
     mainWindow.webContents.on("did-finish-load", function () {
+        mainWindow.webContents.executeJavaScript("setAppVersionText();");
         mainWindow.show();
         // everything's loaded, tell the renderer process to do its thing
         mainWindow.webContents.executeJavaScript("loadConfig();");

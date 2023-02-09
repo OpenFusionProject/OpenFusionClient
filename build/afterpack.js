@@ -1,5 +1,5 @@
 const fs = require('fs');
-const dir = './dist/win-ia32-unpacked/resources/default_app'
+const defaultdir = './dist/win-ia32-unpacked/resources/default_app'
 const exefile = './dist/win-ia32-unpacked/OpenFusionClient.exe'
 
 exports.default = function() {

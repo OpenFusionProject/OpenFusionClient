@@ -54,7 +54,7 @@ body {
         "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-#of-versionnumber {
+#of-versionnumberdiv {
     position: fixed;
     bottom: 4px;
     right: 8px;
