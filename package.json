@@ -6,7 +6,6 @@
     "scripts": {
         "postinstall": "npx patch-package && npm explore electron-prebuilt -- npm run postinstall",
         "start": "electron .",
-        "build": "node build.js",
         "pack": "electron-builder --win --ia32 --dir",
         "dist": "electron-builder --win --ia32",
         "prettier": "npx prettier --write ."
@@ -52,12 +51,17 @@
         },
         "files": [
             "!patches${/*}",
+            "!.vscode${/*}",
             "!*.php",
             "!rankurl.txt",
             "!README.md",
-            "!.npmrc"
+            "!LICENSE.md",
+            "!.npmrc",
+            "!.prettierrc",
+            "!.prettierignore"
         ],
         "extraFiles": [
+            "LICENSE.md",
             {
                 "from": "build/utils",
                 "to": "utils"
