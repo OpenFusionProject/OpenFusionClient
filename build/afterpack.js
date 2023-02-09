@@ -4,7 +4,7 @@ const exefile = './dist/win-ia32-unpacked/OpenFusionClient.exe'
 
 exports.default = function() {
   // remove leftover files from default electron app
-  fs.rm(dir, { recursive: true }, (err) => {
+  fs.rm(defaultdir, { recursive: true }, (err) => {
     if (err) {
         throw err;
     }

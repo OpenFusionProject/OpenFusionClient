@@ -43,10 +43,8 @@ function installUnity(callback) {
     child.on("exit", function () {
         // overwrite 3.5.2 loader/player with FF's custom version
         var dstfolder =
-            app.getPath("appData") + "..\\LocalLow\\Unity\\WebPlayer";
-        fs.copySync(utilsdir + "\\WebPlayer", dstfolder, {
-            clobber: true,
-        });
+            app.getPath("appData") + "\\..\\LocalLow\\Unity\\WebPlayer";
+        fs.copySync(utilsdir + "\\WebPlayer", dstfolder, { clobber: true });
         // avoids error reporter popping up when closing Electron
         fs.removeSync(dstfolder + "\\UnityBugReporter.exe");
         console.log("Unity Web Player installed successfully.");
