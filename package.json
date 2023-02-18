@@ -70,6 +70,6 @@
         "afterPack": "./build/afterpack.js"
     },
     "dependencies": {
-        "fs-extra": "^0.30.0"
+        "fs-extra": "2.0.0"
     }
 }
