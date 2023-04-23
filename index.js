@@ -205,7 +205,7 @@ function showMainWindow() {
                 require("shell").openExternal("https://discord.gg/DYavckB");
                 break;
             default:
-                mainWindow.webContents.loadURL(url);
+                mainWindow.loadURL(url);
         }
     });
 }
