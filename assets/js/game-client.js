@@ -5,7 +5,7 @@ var gameRunning = false;
 
 // Uncomment and enter credentials to skip login screen
 function authDoCallback(param) {
-    /*var unity = document.getElementById('Unity_embed');
+    /*var unity = document.getElementById('unityEmbed');
   unity.SendMessage("GlobalManager", "SetTEGid", "player");
   unity.SendMessage("GlobalManager", "SetAuthid", "0");
   unity.SendMessage("GlobalManager", "DoAuth", 0);*/
@@ -33,7 +33,7 @@ function PayPage(param) {
 
 function onResize() {
     if (gameRunning == true) {
-        var unity = document.getElementById("Unity_embed");
+        var unity = document.getElementById("unityEmbed");
         unity.style.width = window.innerWidth + "px";
         unity.style.height = window.innerHeight + "px";
     }
@@ -56,7 +56,7 @@ function launchGame() {
         "codebase",
         "undefined/UnityWebPlayer.cab#version=2,0,0,0"
     );
-    object.setAttribute("id", "Unity_object");
+    object.setAttribute("id", "unityObject");
     object.setAttribute("width", "1264");
     object.setAttribute("height", "661");
 
@@ -66,20 +66,19 @@ function launchGame() {
         "pluginspage",
         "http://www.unity3d.com/unity-web-player-2.x"
     );
-    embed.setAttribute("id", "Unity_embed");
+    embed.setAttribute("id", "unityEmbed");
     embed.setAttribute("width", "1280");
     embed.setAttribute("height", "680");
-    embed.setAttribute("src", window.asseturl + "main.unity3d");
-    embed.setAttribute("disablecontdparaextmenu", "true");
+    embed.setAttribute("src", window.assetUrl + "main.unity3d");
     embed.setAttribute("bordercolor", "000000");
     embed.setAttribute("backgroundcolor", "000000");
     embed.setAttribute("disableContextMenu", true);
     embed.setAttribute("textcolor", "ccffff");
-    embed.setAttribute("logoimage", "assets/img/unity_dexlabs.png");
-    embed.setAttribute("progressbarimage", "assets/img/unity_loadingbar.png");
+    embed.setAttribute("logoimage", "assets/img/unity-dexlabs.png");
+    embed.setAttribute("progressbarimage", "assets/img/unity-loadingbar.png");
     embed.setAttribute(
         "progressframeimage",
-        "assets/img/unity_loadingframe.png"
+        "assets/img/unity-loadingframe.png"
     );
     embed.setAttribute(
         "autoupdateurlsignature",

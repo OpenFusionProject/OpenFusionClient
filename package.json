@@ -67,7 +67,7 @@
                 "to": "utils"
             }
         ],
-        "afterPack": "./build/afterpack.js"
+        "afterPack": "./build/after-pack.js"
     },
     "dependencies": {
         "fs-extra": "2.0.0"
