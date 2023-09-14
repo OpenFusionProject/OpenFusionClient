@@ -6,60 +6,18 @@ var dialog = require("dialog");
 var BrowserWindow = require("browser-window");
 
 var mainWindow = null;
-
 app.commandLine.appendSwitch("enable-npapi");
+app.commandLine.appendSwitch("no-proxy-server");
 
-function verifyMD5Hash(file, hash) {
-    if (fs.existsSync(file)) {
-        var buffer = fs.readFileSync(file);
-        var computedHash = require("crypto")
-            .createHash("md5")
-            .update(buffer)
-            .digest("hex");
-        if (hash == computedHash) {
-            return true;
-        }
-    }
-    return false;
+var userData = app.getPath("userData");
+var unityHomeDir = __dirname + "\\..\\..\\WebPlayer";
+// if running in non-packaged / development mode, this dir will be slightly different
+if (process.env.npm_node_execpath) {
+    unityHomeDir = app.getAppPath() + "\\build\\WebPlayer";
 }
 
-function verifyUnity() {
-    var loaderPath =
-        app.getPath("appData") +
-        "\\..\\LocalLow\\Unity\\WebPlayer\\loader\\npUnity3D32.dll";
-    var playerPath =
-        app.getPath("appData") +
-        "\\..\\LocalLow\\Unity\\WebPlayer\\player\\fusion-2.x.x\\webplayer_win.dll";
-
-    return (
-        verifyMD5Hash(loaderPath, "dbbac62d8379d2d870479b04b8157b99") &&
-        verifyMD5Hash(playerPath, "e5028405b4483de9e5e5fe9cd5f1e98f")
-    );
-}
-
-function installUnity(callback) {
-    var utilsDir = __dirname + "\\..\\..\\utils";
-
-    // if running in non-packaged / development mode, this dir will be slightly different
-    if (process.env.npm_node_execpath) {
-        utilsDir = app.getAppPath() + "\\build\\utils";
-    }
-
-    // run the installer silently
-    var child = require("child_process").spawn(
-        utilsDir + "\\UnityWebPlayer.exe",
-        ["/quiet", "/S"]
-    );
-    child.on("exit", function () {
-        // overwrite 3.5.2 loader/player with FF's custom version
-        var dest = app.getPath("appData") + "\\..\\LocalLow\\Unity\\WebPlayer";
-        fs.copySync(utilsDir + "\\WebPlayer", dest, { clobber: true });
-        // avoids error reporter popping up when closing Electron
-        fs.removeSync(dest + "\\UnityBugReporter.exe");
-        console.log("Unity Web Player installed successfully.");
-        callback();
-    });
-}
+process.env["UNITY_HOME_DIR"] = unityHomeDir;
+process.env["UNITY_DISABLE_PLUGIN_UPDATES"] = "yes";
 
 function initialSetup(firstTime) {
     // Display a small window to inform the user that the app is working
@@ -70,46 +28,41 @@ function initialSetup(firstTime) {
         center: true,
         frame: false,
     });
-    setupWindow.loadUrl("file://" + __dirname + "/initial-setup.html");
-    installUnity(function () {
-        if (!firstTime) {
-            // migration from pre-1.4
-            // Back everything up, just in case
-            fs.copySync(
-                app.getPath("userData") + "\\config.json",
-                app.getPath("userData") + "\\config.json.bak"
-            );
-            fs.copySync(
-                app.getPath("userData") + "\\servers.json",
-                app.getPath("userData") + "\\servers.json.bak"
-            );
-            fs.copySync(
-                app.getPath("userData") + "\\versions.json",
-                app.getPath("userData") + "\\versions.json.bak"
-            );
-        } else {
-            // first-time setup
-            // Copy default servers
-            fs.copySync(
-                __dirname + "\\defaults\\servers.json",
-                app.getPath("userData") + "\\servers.json"
-            );
-        }
-
-        // Copy default versions and config
+    if (!firstTime) {
+        // migration from pre-1.4
+        // Back everything up, just in case
+        setupWindow.loadUrl("file://" + __dirname + "/initial-setup.html");
+        fs.copySync(userData + "\\config.json", userData + "\\config.json.bak");
         fs.copySync(
-            __dirname + "\\defaults\\versions.json",
-            app.getPath("userData") + "\\versions.json"
+            userData + "\\servers.json",
+            userData + "\\servers.json.bak"
         );
         fs.copySync(
-            __dirname + "\\defaults\\config.json",
-            app.getPath("userData") + "\\config.json"
+            userData + "\\versions.json",
+            userData + "\\versions.json.bak"
         );
+    } else {
+        // first-time setup
+        // Copy default servers
+        fs.copySync(
+            __dirname + "\\defaults\\servers.json",
+            userData + "\\servers.json"
+        );
+    }
 
-        console.log("JSON files copied.");
-        setupWindow.destroy();
-        showMainWindow();
-    });
+    // Copy default versions and config
+    fs.copySync(
+        __dirname + "\\defaults\\versions.json",
+        userData + "\\versions.json"
+    );
+    fs.copySync(
+        __dirname + "\\defaults\\config.json",
+        userData + "\\config.json"
+    );
+
+    console.log("JSON files copied.");
+    setupWindow.destroy();
+    showMainWindow();
 }
 
 ipc.on("exit", function (id) {
@@ -131,18 +84,20 @@ app.on("ready", function () {
         dialog.showErrorBox("Error!", errorMessage);
         return;
     }
-
     // Create the browser window.
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 720,
         show: false,
-        "web-preferences": { plugins: true },
+        "web-preferences": {
+            plugins: true,
+            "extra-plugin-dirs": [unityHomeDir + "\\loader"],
+        },
     });
     mainWindow.setMinimumSize(640, 480);
 
     // Check for first run
-    var configPath = app.getPath("userData") + "\\config.json";
+    var configPath = userData + "\\config.json";
     try {
         if (!fs.existsSync(configPath)) {
             console.log("Config file not found. Running initial setup.");
@@ -153,11 +108,7 @@ app.on("ready", function () {
                 console.log("Pre-1.4 config detected. Running migration.");
                 initialSetup(false);
             } else {
-                if (verifyUnity()) {
-                    showMainWindow();
-                } else {
-                    installUnity(showMainWindow);
-                }
+                showMainWindow();
             }
         }
     } catch (ex) {

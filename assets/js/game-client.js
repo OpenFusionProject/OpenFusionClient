@@ -61,7 +61,7 @@ function launchGame() {
     object.setAttribute("height", "661");
 
     var embed = document.createElement("embed");
-    embed.setAttribute("type", "application/vnd.unity");
+    embed.setAttribute("type", "application/vnd.ffuwp");
     embed.setAttribute(
         "pluginspage",
         "http://www.unity3d.com/unity-web-player-2.x"

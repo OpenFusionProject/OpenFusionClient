@@ -1,6 +1,6 @@
 {
     "name": "OpenFusionClient",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "description": "OpenFusionClient",
     "main": "index.js",
     "scripts": {
@@ -63,8 +63,12 @@
         "extraFiles": [
             "LICENSE.md",
             {
-                "from": "build/utils",
-                "to": "utils"
+                "from": "build/OpenFusionClient.exe.manifest",
+                "to": "OpenFusionClient.exe.manifest"
+            },
+            {
+                "from": "build/WebPlayer",
+                "to": "WebPlayer"
             }
         ],
         "afterPack": "./build/after-pack.js"
