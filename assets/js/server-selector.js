@@ -280,10 +280,10 @@ function setGameInfo(serverUUID) {
 
     // DNS resolution. there is no synchronous version for some stupid reason
     if (!address.match(/^[0-9.]+$/))
-        dns.resolve4(address, function (err, res) {
+        dns.lookup(address, family=4, function (err, resolvedAddress) {
             if (!err) {
-                console.log("Resolved " + address + " to " + res[0]);
-                address = res[0];
+                console.log("Resolved " + address + " to " + resolvedAddress);
+                address = resolvedAddress;
             } else {
                 console.log("Err: " + err.code);
             }
