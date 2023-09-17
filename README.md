@@ -1,6 +1,6 @@
 # OpenFusionClient
 
-[![Current Release](https://img.shields.io/github/v/release/OpenFusionProject/OpenFusionClient)](https://github.com/OpenFusionProject/OpenFusionClient/releases/latest) [![Discord](https://img.shields.io/badge/chat-on%20discord-7289da.svg?logo=discord)](https://discord.gg/DYavckB)[![License](https://img.shields.io/github/license/OpenFusionProject/OpenFusionClient)](https://github.com/OpenFusionProject/OpenFusionClient/blob/master/LICENSE.md)
+[![Current Release](https://img.shields.io/github/v/release/OpenFusionProject/OpenFusionClient?include_prereleases)](https://github.com/OpenFusionProject/OpenFusionClient/releases/latest) [![Discord](https://img.shields.io/badge/chat-on%20discord-7289da.svg?logo=discord)](https://discord.gg/DYavckB)[![License](https://img.shields.io/github/license/OpenFusionProject/OpenFusionClient)](https://github.com/OpenFusionProject/OpenFusionClient/blob/master/LICENSE.md)
 
 An Electron app that allows you to easily join FusionFall servers.
 
