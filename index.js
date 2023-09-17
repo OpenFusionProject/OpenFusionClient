@@ -28,18 +28,9 @@ var serversPath = path.join(userData, "/servers.json");
 var versionsPath = path.join(userData, "/versions.json");
 
 function initialSetup(firstTime) {
-    // Display a small window to inform the user that the app is working
-    setupWindow = new BrowserWindow({
-        width: 275,
-        height: 450,
-        resizable: false,
-        center: true,
-        frame: false,
-    });
     if (!firstTime) {
         // migration from pre-1.4
         // Back everything up, just in case
-        setupWindow.loadUrl("file://" + __dirname + "/initial-setup.html");
         fs.copySync(configPath, configPath + ".bak");
         fs.copySync(serversPath, serversPath + ".bak");
         fs.copySync(versionsPath, versionsPath + ".bak");
@@ -57,7 +48,6 @@ function initialSetup(firstTime) {
     fs.copySync(path.join(__dirname, "/defaults/config.json"), configPath);
 
     console.log("JSON files copied.");
-    setupWindow.destroy();
     showMainWindow();
 }
 
