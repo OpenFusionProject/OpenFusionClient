@@ -1,3 +1,4 @@
+// TODO: path.join in this file, pass in json paths from index.js
 var remote = require("remote");
 var remotefs = remote.require("fs-extra");
 var dns = remote.require("dns");

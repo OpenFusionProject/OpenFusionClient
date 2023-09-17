@@ -1,23 +1,31 @@
 var app = require("app"); // Module to control application life.
-var ipc = require("ipc");
-var fs = require("fs-extra");
-var os = require("os");
 var dialog = require("dialog");
-var BrowserWindow = require("browser-window");
+var fs = require("fs-extra");
+var ipc = require("ipc");
+var os = require("os");
+var path = require("path");
 
+var BrowserWindow = require("browser-window");
 var mainWindow = null;
-app.commandLine.appendSwitch("enable-npapi");
-app.commandLine.appendSwitch("no-proxy-server");
 
 var userData = app.getPath("userData");
-var unityHomeDir = __dirname + "\\..\\..\\WebPlayer";
+var unityHomeDir = path.join(__dirname, "../../WebPlayer");
+
 // if running in non-packaged / development mode, this dir will be slightly different
 if (process.env.npm_node_execpath) {
-    unityHomeDir = app.getAppPath() + "\\build\\WebPlayer";
+    unityHomeDir = path.join(app.getAppPath(), "/build/WebPlayer");
 }
 
 process.env["UNITY_HOME_DIR"] = unityHomeDir;
 process.env["UNITY_DISABLE_PLUGIN_UPDATES"] = "yes";
+
+app.commandLine.appendSwitch("enable-npapi");
+app.commandLine.appendSwitch("load-plugin", path.join(unityHomeDir, "/loader/npUnity3D32.dll"));
+app.commandLine.appendSwitch("no-proxy-server");
+
+var configPath = path.join(userData, "/config.json");
+var serversPath = path.join(userData, "/servers.json");
+var versionsPath = path.join(userData, "/versions.json");
 
 function initialSetup(firstTime) {
     // Display a small window to inform the user that the app is working
@@ -32,33 +40,21 @@ function initialSetup(firstTime) {
         // migration from pre-1.4
         // Back everything up, just in case
         setupWindow.loadUrl("file://" + __dirname + "/initial-setup.html");
-        fs.copySync(userData + "\\config.json", userData + "\\config.json.bak");
-        fs.copySync(
-            userData + "\\servers.json",
-            userData + "\\servers.json.bak"
-        );
-        fs.copySync(
-            userData + "\\versions.json",
-            userData + "\\versions.json.bak"
-        );
+        fs.copySync(configPath, configPath + ".bak");
+        fs.copySync(serversPath, serversPath + ".bak");
+        fs.copySync(versionsPath, versionsPath + ".bak");
     } else {
         // first-time setup
         // Copy default servers
         fs.copySync(
-            __dirname + "\\defaults\\servers.json",
-            userData + "\\servers.json"
+            path.join(__dirname, "/defaults/servers.json"),
+            serversPath
         );
     }
 
     // Copy default versions and config
-    fs.copySync(
-        __dirname + "\\defaults\\versions.json",
-        userData + "\\versions.json"
-    );
-    fs.copySync(
-        __dirname + "\\defaults\\config.json",
-        userData + "\\config.json"
-    );
+    fs.copySync(path.join(__dirname, "/defaults/versions.json"), versionsPath);
+    fs.copySync(path.join(__dirname, "/defaults/config.json"), configPath);
 
     console.log("JSON files copied.");
     setupWindow.destroy();
@@ -90,14 +86,12 @@ app.on("ready", function () {
         height: 720,
         show: false,
         "web-preferences": {
-            plugins: true,
-            "extra-plugin-dirs": [unityHomeDir + "\\loader"],
+            plugins: true
         },
     });
     mainWindow.setMinimumSize(640, 480);
 
     // Check for first run
-    var configPath = userData + "\\config.json";
     try {
         if (!fs.existsSync(configPath)) {
             console.log("Config file not found. Running initial setup.");
