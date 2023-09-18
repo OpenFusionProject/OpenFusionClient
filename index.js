@@ -28,6 +28,7 @@ var userData = app.getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
+var hashPath = path.join(userData, "hash.txt");
 
 function initialSetup(firstTime) {
     if (!firstTime) {
@@ -36,6 +37,7 @@ function initialSetup(firstTime) {
         fs.copySync(configPath, configPath + ".bak");
         fs.copySync(serversPath, serversPath + ".bak");
         fs.copySync(versionsPath, versionsPath + ".bak");
+        fs.copySync(hashPath, hashPath + ".bak");
     } else {
         // First-time setup
         // Copy default servers
@@ -48,6 +50,7 @@ function initialSetup(firstTime) {
     // Copy default versions and config
     fs.copySync(path.join(__dirname, "/defaults/versions.json"), versionsPath);
     fs.copySync(path.join(__dirname, "/defaults/config.json"), configPath);
+    fs.copySync(path.join(__dirname, "/defaults/hash.txt"), hashPath);
 
     console.log("JSON files copied.");
     showMainWindow();
@@ -128,6 +131,7 @@ function showMainWindow() {
         mainWindow.webContents.executeJavaScript("loadConfig();");
         mainWindow.webContents.executeJavaScript("loadGameVersions();");
         mainWindow.webContents.executeJavaScript("loadServerList();");
+        mainWindow.webContents.executeJavaScript("loadCacheList();");
     });
 
     mainWindow.webContents.on("plugin-crashed", function () {

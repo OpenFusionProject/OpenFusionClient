@@ -80,6 +80,11 @@ body {
     background-repeat: repeat;
 }
 
+.btn-warning {
+    background-image: url("../../assets/img/btn-warning-bg.png");
+    background-repeat: repeat;
+}
+
 #of-aboutmodal > .modal-dialog > .modal-content {
     background-color: #093363;
     border-color: #6699ff;
@@ -101,6 +106,11 @@ body {
 }
 
 #of-restoreserversmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-editcacheconfigmodal > .modal-dialog > .modal-content {
     background-color: #093363;
     border-color: #6699ff;
 }
