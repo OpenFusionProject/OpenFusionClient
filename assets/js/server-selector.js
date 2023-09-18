@@ -2,13 +2,21 @@ var remote = require("remote");
 var remotefs = remote.require("fs-extra");
 var dns = remote.require("dns");
 var path = remote.require("path");
+var url = remote.require("url");
+var http = remote.require("http");
+var createHash = remote.require("crypto").createHash;
 
 var userData = remote.require("app").getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
 
+var chunk_size = 1 << 16;
+var gb = 1 << 30;
+var cdn = "cdn.dexlabs.systems";
+
 var versionArray;
+var versionHashes;
 var serverArray;
 var config;
 
@@ -156,6 +164,409 @@ function loadServerList() {
         // No servers are added, make sure placeholder is visible
         $("#server-listing-placeholder").attr("hidden", false);
     }
+}
+
+function getCacheElemID(versionString, cacheMode, elementName) {
+    return [versionString, cacheMode, "cache", elementName].filter(function (value) {
+        return typeof value !== "undefined";
+    }).join("-");
+}
+
+function getCacheButtonID(versionString, cacheMode, buttonMode) {
+    return [getCacheElemID(versionString, cacheMode), buttonMode, "button"].join("-");
+}
+
+function getCacheLabelText(sizes) {
+    var labelText = (sizes.intact / gb).toFixed(2) + " / " + (sizes.total / gb).toFixed(2) + " GB";
+
+    if (sizes.altered > 0) {
+        labelText += " (" + (sizes.altered / gb).toFixed(2) + " GB Altered)";
+    }
+
+    return labelText;
+}
+
+function getCacheInfoCell(versionString, cacheMode) {
+    var downloadFuncName = "download" + cacheMode.charAt(0).toUpperCase() + cacheMode.slice(1) + "Cache";
+    var deleteFuncName = "delete" + cacheMode.charAt(0).toUpperCase() + cacheMode.slice(1) + "Cache";
+
+    var divID = getCacheElemID(versionString, cacheMode, "div");
+    var labelID = getCacheElemID(versionString, cacheMode, "label");
+
+    var settings = {
+        download: {
+            fn: downloadFuncName,
+            icon: "fas fa-download",
+            class: "btn btn-success mr-1",
+            tooltip: "Download Cache"
+        },
+        fix: {
+            fn: downloadFuncName,
+            icon: "fas fa-hammer",
+            class: "btn btn-warning mr-1",
+            tooltip: "Fix Altered Files in Cache"
+        },
+        delete: {
+            fn: deleteFuncName,
+            icon: "fas fa-trash-alt",
+            class: "btn btn-danger mr-1",
+            tooltip: "Delete Cache"
+        }
+    };
+
+    var cellCache = document.createElement("td");
+    var divCacheAll = document.createElement("div");
+
+    var labelCache = document.createElement("label");
+    labelCache.setAttribute("id", labelID);
+    labelCache.setAttribute("for", divID);
+
+    var divCacheButtons = document.createElement("div");
+    divCacheButtons.setAttribute("id", labelID);
+
+    $.each(settings, function (buttonMode, config) {
+        if (cacheMode === "playable" && buttonMode !== "delete") {
+            return;
+        }
+
+        var buttonID = getCacheButtonID(versionString, cacheMode, buttonMode);
+
+        var iconItalic = document.createElement("i");
+        iconItalic.setAttribute("class", config.icon);
+
+        var buttonCache = document.createElement("button");
+        buttonCache.setAttribute("id", buttonID);
+        buttonCache.setAttribute("class", config.class);
+        buttonCache.setAttribute("title", config.tooltip);
+        buttonCache.setAttribute("type", "button");
+        buttonCache.setAttribute("onclick", config.fn + "(\"" + versionString + "\");");
+        buttonCache.appendChild(iconItalic);
+
+        divCacheButtons.appendChild(buttonCache);
+    });
+
+    divCacheAll.appendChild(labelCache);
+    divCacheAll.appendChild(divCacheButtons);
+    cellCache.appendChild(divCacheAll);
+
+    return cellCache;
+}
+
+function getFileHash(filePath) {
+    var totalReadCount = 0, readCount = 0;
+    var buff = new Buffer(chunk_size);
+    var hash = createHash("sha256");
+    var file = remotefs.openSync(filePath, "r");
+
+    while ((readCount = remotefs.readSync(file, buff, 0, chunk_size, totalReadCount)) > 0) {
+        totalReadCount += readCount;
+        hash.update(buff.slice(0, readCount));
+    }
+
+    remotefs.closeSync(file);
+    return hash.digest(encoding="hex");
+}
+
+function downloadFiles(root, client, sizes, hashes, updateCallback, endCallback) {
+    if (hashes.length === 0) {
+        endCallback();
+        return;
+    }
+
+    var filePath = Object.keys(hashes)[0];
+    var fileHash = hashes[filePath];
+    delete hashes[filePath];
+
+    var fullFilePath = path.join(root, filePath);
+    var fullCDNPath = ["http:/", cdn, "ff", "big", filePath].join("/");
+
+    if (remotefs.existsSync(fullFilePath) && fileHash === getFileHash(fullFilePath)) {
+        console.log(fullFilePath + " is intact, skipping...");
+        return;
+    }
+
+    downloadFile(client, fullCDNPath, fullFilePath, function () {
+        var sizeRead = remotefs.statSync(fullFilePath).size;
+
+        if (fileHash === getFileHash(fullFilePath)) {
+            sizes.intact += sizeRead;
+        } else {
+            sizes.altered += sizeRead;
+        }
+
+        console.log(fullFilePath + " was downloaded from " + fullCDNPath);
+
+        setTimeout(function () {
+            updateCallback(sizes);
+            downloadFiles(root, client, sizes, hashes, updateCallback, endCallback);
+        }, 100);
+    });
+}
+
+function downloadFile(client, fullCDNPath, fullFilePath, callback) {
+    remotefs.ensureDirSync(path.dirname(fullFilePath));
+
+    var urlParts = url.parse(fullCDNPath);
+    var req = client.request("GET", urlParts.path, {
+        "host": urlParts.hostname,
+        "Content-Type": "application/octet-stream"
+    });
+    var writeStream = remotefs.createWriteStream(fullFilePath);
+
+    var retry = function (err) {
+        writeStream.end();
+        writeStream.destroy();
+
+        remotefs.removeSync(fullFilePath);
+
+        console.log("Error writing file " + fullFilePath + "\n" + err);
+
+        setTimeout(function () {
+            console.log("Retrying " + fullCDNPath);
+            downloadFile(client, fullCDNPath, fullFilePath, callback);
+        }, 1000);
+    }
+
+    writeStream.on("error", retry);
+
+    req.on("response", function (res) {
+        if (res.statusCode !== 200) {
+            console.log("Error in fetching file " + fullFilePath + " from " + fullCDNPath);
+            retry("Status Code: " + res.statusCode);
+            return;
+        }
+
+        res.pipe(writeStream);
+
+        res.on("end", callback);
+        res.on("error", retry);
+    });
+
+    req.on("error", retry);
+
+    req.end();
+}
+
+function loadCacheList() {
+    var versionjson = JSON.parse(
+        remotefs.readFileSync(path.join(userDir, "versions.json"))
+    );
+    versionArray = versionjson["versions"];
+
+    versionHashes = { playable: {}, offline: {} };
+    var hashlines = remotefs.readFileSync(path.join(userDir, "hash.txt"), "utf-8");
+    $.each(hashlines.split(/\r\n|\r|\n/), function (key, line) {
+        if (line.length === 0) {
+            return;
+        }
+
+        var linearr = line.split(" ", 2);
+        var fileHash = linearr[0];
+        var filePath = linearr[1].substr(3);
+        var pathArray = filePath.split("/");
+        var hashDict = (pathArray[0] === "Offline") ?
+            versionHashes.offline :
+            versionHashes.playable;
+        var versionString = (pathArray[0] === "Offline") ?
+            pathArray[1] :
+            pathArray[0];
+
+        if (!hashDict.hasOwnProperty(versionString)) {
+            hashDict[versionString] = {};
+        }
+
+        hashDict[versionString][filePath.replace("Offline/", "")] = fileHash;
+    });
+
+    $(".cache-listing-entry").remove();
+
+    $.each(versionArray, function (key, value) {
+        var row = document.createElement("tr");
+        row.className = "cache-listing-entry"
+        row.setAttribute("id", value.name);
+
+        var cellVersion = document.createElement("td");
+        cellVersion.textContent = value.name;
+        cellVersion.className = "text-monospace";
+
+        var cellPlayableCache = getCacheInfoCell(value.name, "playable");
+        var cellOfflineCache = getCacheInfoCell(value.name, "offline");
+
+        row.appendChild(cellVersion);
+        row.appendChild(cellPlayableCache);
+        row.appendChild(cellOfflineCache);
+
+        $("#cache-tablebody").append(row);
+
+        checkPlayableCache(value.name);
+        checkOfflineCache(value.name);
+    })
+}
+
+function deletePlayableCache(versionString) {
+    var cacheroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache");
+
+    resetCacheNames();
+
+    if (versionString === "Offline") {
+        return;
+    }
+
+    remotefs.removeSync(path.join(cacheroot, versionString));
+    console.log("Playable cache " + versionString + " has been removed!");
+
+    checkPlayableCache(versionString);
+}
+
+function downloadOfflineCache(versionString) {
+    var offlineroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache", "Offline");
+
+    var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
+    var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
+    var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
+    var label = document.getElementById(getCacheElemID(versionString, "offline", "label"));
+
+    var sizes = {
+        intact: 0,
+        altered: 0,
+        total: versionArray.filter(function (value) {
+            return value.name === versionString;
+        })[0].offline_size
+    };
+
+    buttonDownload.setAttribute("disabled", "");
+    buttonFix.setAttribute("disabled", "");
+    buttonDelete.setAttribute("disabled", "");
+
+    buttonDownload.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+    buttonFix.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+
+    downloadFiles(
+        offlineroot,
+        http.createClient(80, cdn),
+        sizes,
+        JSON.parse(JSON.stringify(versionHashes.offline[versionString])),
+        function (sizesNow) {
+            label.innerHTML = getCacheLabelText(sizesNow);
+        },
+        function () {
+            buttonDownload.children[0].setAttribute("class", "fas fa-download");
+            buttonFix.children[0].setAttribute("class", "fas fa-hammer");
+            checkOfflineCache(versionString);
+        }
+    );
+}
+
+function deleteOfflineCache(versionString) {
+    var offlineroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache", "Offline");
+
+    remotefs.removeSync(path.join(offlineroot, versionString));
+    console.log("Offline cache " + versionString + " has been removed!");
+
+    checkOfflineCache(versionString);
+}
+
+function checkPlayableCache(versionString) {
+    var cacheroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache");
+
+    var button = document.getElementById(getCacheButtonID(versionString, "playable", "delete"));
+    var label = document.getElementById(getCacheElemID(versionString, "playable", "label"));
+
+    var sizes = {
+        intact: 0,
+        altered: 0,
+        total: versionArray.filter(function (value) {
+            return value.name === versionString;
+        })[0].playable_size
+    };
+
+    resetCacheNames();
+
+    $.each(versionHashes.playable[versionString], function (filePath, fileHash) {
+        var fullFilePath = path.join(cacheroot, filePath);
+
+        if (remotefs.existsSync(fullFilePath)) {
+            var fileSize = remotefs.statSync(fullFilePath).size;
+
+            if (fileHash === getFileHash(fullFilePath)) {
+                sizes.intact += fileSize;
+            } else {
+                sizes.altered += fileSize;
+            }
+        }
+    });
+
+    if (sizes.intact > 0 || sizes.altered > 0) {
+        button.removeAttribute("disabled");
+    } else {
+        button.setAttribute("disabled", "");
+    }
+
+    label.innerHTML = getCacheLabelText(sizes);
+}
+
+function checkOfflineCache(versionString) {
+    var offlineroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache", "Offline");
+
+    var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
+    var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
+    var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
+    var label = document.getElementById(getCacheElemID(versionString, "offline", "label"));
+
+    var sizes = {
+        intact: 0,
+        altered: 0,
+        total: versionArray.filter(function (value) {
+            return value.name === versionString;
+        })[0].offline_size
+    };
+
+    $.each(versionHashes.offline[versionString], function (filePath, fileHash) {
+        var fullFilePath = path.join(offlineroot, filePath);
+
+        if (remotefs.existsSync(fullFilePath)) {
+            var fileSize = remotefs.statSync(fullFilePath).size;
+
+            if (fileHash === getFileHash(fullFilePath)) {
+                sizes.intact += fileSize;
+            } else {
+                sizes.altered += fileSize;
+            }
+        }
+    });
+
+    if (sizes.intact > 0 || sizes.altered > 0) {
+        buttonDownload.setAttribute("disabled", "");
+        buttonDelete.removeAttribute("disabled");
+    } else {
+        buttonDownload.removeAttribute("disabled");
+        buttonDelete.setAttribute("disabled", "");
+    }
+
+    if (sizes.altered > 0) {
+        buttonFix.removeAttribute("disabled");
+    } else {
+        buttonFix.setAttribute("disabled", "");
+    }
+
+    label.innerHTML = getCacheLabelText(sizes);
+}
+
+function resetCacheNames() {
+    var cacheroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache");
+    var currentcache = path.join(cacheroot, "Fusionfall");
+    var record = path.join(userDir, ".lastver");
+
+    if (!remotefs.existsSync(currentcache)) {
+        return;
+    }
+
+    lastversion = remotefs.readFileSync(record);
+    remotefs.renameSync(
+        currentcache,
+        path.join(cacheroot, lastversion)
+    );
+    console.log("Current cache " + lastversion + " has been renamed to its original name.");
 }
 
 function performCacheSwap(newVersion) {
