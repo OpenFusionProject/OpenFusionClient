@@ -180,8 +180,8 @@ function performCacheSwap(newVersion) {
         // Cache already exists, find out what version it belongs to
         if (remotefs.existsSync(record)) {
             if (lastVersion != newVersion) {
-                // Remove the directory we're trying to store the 
-                // existing cache to if it already exists for whatever 
+                // Remove the directory we're trying to store the
+                // existing cache to if it already exists for whatever
                 // reason, as it would cause an EPERM error otherwise.
                 // This is a no-op if the directory doesn't exist
                 remotefs.removeSync(path.join(cacheRoot, lastVersion));
@@ -333,7 +333,9 @@ $("#server-table").on("dblclick", ".server-listing-entry", function (event) {
 });
 
 $("#of-editservermodal").on("show.bs.modal", function (e) {
-    var jsonToModify = remotefs.readJsonSync(path.join(userData, "servers.json"));
+    var jsonToModify = remotefs.readJsonSync(
+        path.join(userData, "servers.json")
+    );
     $.each(jsonToModify["servers"], function (key, value) {
         if (value["uuid"] == getSelectedServer()) {
             $("#editserver-descinput")[0].value = value["description"];
