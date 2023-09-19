@@ -1,9 +1,13 @@
-// TODO: path.join in this file, pass in json paths from index.js
 var remote = require("remote");
 var remotefs = remote.require("fs-extra");
 var dns = remote.require("dns");
+var path = remote.require("path");
 
-var userDir = remote.require("app").getPath("userData");
+var userData = remote.require("app").getPath("userData");
+var configPath = path.join(userData, "config.json");
+var serversPath = path.join(userData, "servers.json");
+var versionsPath = path.join(userData, "versions.json");
+
 var versionArray;
 var serverArray;
 var config;
@@ -44,9 +48,7 @@ function setAppVersionText() {
 }
 
 function addServer() {
-    var jsonToModify = JSON.parse(
-        remotefs.readFileSync(userDir + "\\servers.json")
-    );
+    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
 
     var server = {};
     server["uuid"] = uuidv4();
@@ -63,17 +65,12 @@ function addServer() {
 
     jsonToModify["servers"].push(server);
 
-    remotefs.writeFileSync(
-        userDir + "\\servers.json",
-        JSON.stringify(jsonToModify, null, 4)
-    );
+    remotefs.writeFileSync(serversPath, JSON.stringify(jsonToModify, null, 4));
     loadServerList();
 }
 
 function editServer() {
-    var jsonToModify = JSON.parse(
-        remotefs.readFileSync(userDir + "\\servers.json")
-    );
+    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
     $.each(jsonToModify["servers"], function (key, value) {
         if (value["uuid"] == getSelectedServer()) {
             value["description"] =
@@ -90,17 +87,12 @@ function editServer() {
         }
     });
 
-    remotefs.writeFileSync(
-        userDir + "\\servers.json",
-        JSON.stringify(jsonToModify, null, 4)
-    );
+    remotefs.writeFileSync(serversPath, JSON.stringify(jsonToModify, null, 4));
     loadServerList();
 }
 
 function deleteServer() {
-    var jsonToModify = JSON.parse(
-        remotefs.readFileSync(userDir + "\\servers.json")
-    );
+    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
     var result = jsonToModify["servers"].filter(function (obj) {
         return obj.uuid === getSelectedServer();
     })[0];
@@ -109,25 +101,20 @@ function deleteServer() {
 
     jsonToModify["servers"].splice(resultindex, 1);
 
-    remotefs.writeFileSync(
-        userDir + "\\servers.json",
-        JSON.stringify(jsonToModify, null, 4)
-    );
+    remotefs.writeFileSync(serversPath, JSON.stringify(jsonToModify, null, 4));
     loadServerList();
 }
 
 function restoreDefaultServers() {
     remotefs.copySync(
-        __dirname + "\\defaults\\servers.json",
-        userDir + "\\servers.json"
+        path.join(__dirname, "/defaults/servers.json"),
+        serversPath
     );
     loadServerList();
 }
 
 function loadGameVersions() {
-    var versionJson = JSON.parse(
-        remotefs.readFileSync(userDir + "\\versions.json")
-    );
+    var versionJson = JSON.parse(remotefs.readFileSync(versionsPath));
     versionArray = versionJson["versions"];
     $.each(versionArray, function (key, value) {
         $(new Option(value.name, "val")).appendTo("#addserver-versionselect");
@@ -137,13 +124,11 @@ function loadGameVersions() {
 
 function loadConfig() {
     // load config object globally
-    config = JSON.parse(remotefs.readFileSync(userDir + "\\config.json"));
+    config = JSON.parse(remotefs.readFileSync(configPath));
 }
 
 function loadServerList() {
-    var serverJson = JSON.parse(
-        remotefs.readFileSync(userDir + "\\servers.json")
-    );
+    var serverJson = JSON.parse(remotefs.readFileSync(serversPath));
     serverArray = serverJson["servers"];
 
     $(".server-listing-entry").remove(); // Clear out old stuff, if any
@@ -174,12 +159,19 @@ function loadServerList() {
 }
 
 function performCacheSwap(newVersion) {
-    var cacheRoot = userDir + "\\..\\..\\LocalLow\\Unity\\Web Player\\Cache";
-    var currentCache = cacheRoot + "\\Fusionfall";
-    var newCache = cacheRoot + "\\" + newVersion;
-    var record = userDir + "\\.lastver";
+    var cacheRoot = path.join(
+        userData,
+        "/../../LocalLow/Unity/Web Player/Cache"
+    );
+    var currentCache = path.join(cacheRoot, "FusionFall");
+    var newCache = path.join(cacheRoot, newVersion);
+    var record = path.join(userData, ".lastver");
+    var lastVersion = remotefs.readFileSync(record, (encoding = "utf8"));
 
-    // if cache renaming would result in a no-op (ex. launching the same version
+    // make note of what version we are launching for next launch
+    remotefs.writeFileSync(record, newVersion);
+
+    // If cache renaming would result in a no-op (ex. launching the same version
     // two times), then skip it. this avoids permissions errors with multiple clients
     // (file/folder is already open in another process)
     var skip = false;
@@ -187,34 +179,30 @@ function performCacheSwap(newVersion) {
     if (remotefs.existsSync(currentCache)) {
         // cache already exists, find out what version it belongs to
         if (remotefs.existsSync(record)) {
-            lastVersion = remotefs.readFileSync(record);
             if (lastVersion != newVersion) {
+                // Remove the directory we're trying to store the 
+                // existing cache to if it already exists for whatever 
+                // reason, as it would cause an EPERM error otherwise.
+                // This is a no-op if the directory doesn't exist
+                remotefs.removeSync(path.join(cacheRoot, lastVersion));
+                // Store old cache to named directory
                 remotefs.renameSync(
                     currentCache,
-                    cacheRoot + "\\" + lastVersion
+                    path.join(cacheRoot, lastVersion)
                 );
             } else {
-                console.log(
-                    "Cached version unchanged, renaming will be skipped"
-                );
+                console.log("Cached version unchanged, skipping rename");
                 skip = true;
             }
             console.log("Current cache is " + lastVersion);
-        } else {
-            console.log(
-                "Couldn't find last version record; cache may get overwritten"
-            );
         }
     }
 
-    if (remotefs.existsSync(newCache) || !skip) {
-        // rename saved cache to FusionFall
+    if (remotefs.existsSync(newCache) && !skip) {
+        // Rename saved cache to FusionFall
         remotefs.renameSync(newCache, currentCache);
         console.log("Current cache swapped to " + newVersion);
     }
-
-    // make note of what version we are launching for next launch
-    remotefs.writeFileSync(record, newVersion);
 }
 
 // For writing loginInfo.php, assetInfo.php, etc.
@@ -239,31 +227,34 @@ function setGameInfo(serverUUID) {
 
     window.assetUrl = gameVersion.url; // game-client.js needs to access this
 
-    remotefs.writeFileSync(__dirname + "\\assetInfo.php", assetUrl);
+    remotefs.writeFileSync(path.join(__dirname, "assetInfo.php"), assetUrl);
     if (result.hasOwnProperty("endpoint")) {
         var httpEndpoint = result.endpoint.replace("https://", "http://");
         remotefs.writeFileSync(
-            __dirname + "\\rankurl.txt",
+            path.join(__dirname, "rankurl.txt"),
             httpEndpoint + "getranks"
         );
         // Write these out too
         remotefs.writeFileSync(
-            __dirname + "\\sponsor.php",
+            path.join(__dirname, "sponsor.php"),
             httpEndpoint + "upsell/sponsor.png"
         );
         remotefs.writeFileSync(
-            __dirname + "\\images.php",
+            path.join(__dirname, "images.php"),
             httpEndpoint + "upsell/"
         );
     } else {
         // Remove/default the endpoint related stuff, this server won't be using it
-        if (remotefs.existsSync(__dirname + "\\rankurl.txt")) {
-            remotefs.unlinkSync(__dirname + "\\rankurl.txt");
+        if (remotefs.existsSync(path.join(__dirname, "rankurl.txt"))) {
+            remotefs.unlinkSync(path.join(__dirname, "rankurl.txt"));
             remotefs.writeFileSync(
-                __dirname + "\\sponsor.php",
+                path.join(__dirname, "sponsor.php"),
                 "assets/img/welcome.png"
             );
-            remotefs.writeFileSync(__dirname + "\\images.php", "assets/img/");
+            remotefs.writeFileSync(
+                path.join(__dirname, "images.php"),
+                "assets/img/"
+            );
         }
     }
 
@@ -281,7 +272,7 @@ function setGameInfo(serverUUID) {
 
     // DNS resolution. there is no synchronous version for some stupid reason
     if (!address.match(/^[0-9.]+$/))
-        dns.lookup(address, family=4, function (err, resolvedAddress) {
+        dns.lookup(address, (family = 4), function (err, resolvedAddress) {
             if (!err) {
                 console.log("Resolved " + address + " to " + resolvedAddress);
                 address = resolvedAddress;
@@ -299,7 +290,7 @@ function setGameInfo(serverUUID) {
 function prepConnection(address, port) {
     var full = address + ":" + port;
     console.log("Will connect to " + full);
-    remotefs.writeFileSync(__dirname + "\\loginInfo.php", full);
+    remotefs.writeFileSync(path.join(__dirname, "loginInfo.php"), full);
     launchGame();
 }
 
@@ -343,7 +334,7 @@ $("#server-table").on("dblclick", ".server-listing-entry", function (event) {
 
 $("#of-editservermodal").on("show.bs.modal", function (e) {
     var jsonToModify = JSON.parse(
-        remotefs.readFileSync(userDir + "\\servers.json")
+        remotefs.readFileSync(path.join(userData, "servers.json"))
     );
     $.each(jsonToModify["servers"], function (key, value) {
         if (value["uuid"] == getSelectedServer()) {

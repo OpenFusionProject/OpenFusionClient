@@ -8,9 +8,7 @@ var path = require("path");
 var BrowserWindow = require("browser-window");
 var mainWindow = null;
 
-var userData = app.getPath("userData");
 var unityHomeDir = path.join(__dirname, "../../WebPlayer");
-
 // if running in non-packaged / development mode, this dir will be slightly different
 if (process.env.npm_node_execpath) {
     unityHomeDir = path.join(app.getAppPath(), "/build/WebPlayer");
@@ -20,12 +18,16 @@ process.env["UNITY_HOME_DIR"] = unityHomeDir;
 process.env["UNITY_DISABLE_PLUGIN_UPDATES"] = "yes";
 
 app.commandLine.appendSwitch("enable-npapi");
-app.commandLine.appendSwitch("load-plugin", path.join(unityHomeDir, "/loader/npUnity3D32.dll"));
+app.commandLine.appendSwitch(
+    "load-plugin",
+    path.join(unityHomeDir, "/loader/npUnity3D32.dll")
+);
 app.commandLine.appendSwitch("no-proxy-server");
 
-var configPath = path.join(userData, "/config.json");
-var serversPath = path.join(userData, "/servers.json");
-var versionsPath = path.join(userData, "/versions.json");
+var userData = app.getPath("userData");
+var configPath = path.join(userData, "config.json");
+var serversPath = path.join(userData, "servers.json");
+var versionsPath = path.join(userData, "versions.json");
 
 function initialSetup(firstTime) {
     if (!firstTime) {
@@ -76,7 +78,7 @@ app.on("ready", function () {
         height: 720,
         show: false,
         "web-preferences": {
-            plugins: true
+            plugins: true,
         },
     });
     mainWindow.setMinimumSize(640, 480);
