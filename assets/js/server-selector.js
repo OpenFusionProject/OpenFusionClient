@@ -33,7 +33,7 @@ function disableServerListButtons() {
 function getAppVersion() {
     appVersion = remote.require("app").getVersion();
 
-    // simplify version, ex. 1.4.0 -> 1.4,
+    // Simplify version, ex. 1.4.0 -> 1.4,
     // but only if a revision number isn't present
     if (appVersion.endsWith(".0")) {
         return appVersion.substr(0, appVersion.length - 2);
@@ -48,7 +48,7 @@ function setAppVersionText() {
 }
 
 function addServer() {
-    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
+    var jsonToModify = remotefs.readJsonSync(serversPath);
 
     var server = {};
     server["uuid"] = uuidv4();
@@ -70,7 +70,7 @@ function addServer() {
 }
 
 function editServer() {
-    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
+    var jsonToModify = remotefs.readJsonSync(serversPath);
     $.each(jsonToModify["servers"], function (key, value) {
         if (value["uuid"] == getSelectedServer()) {
             value["description"] =
@@ -92,7 +92,7 @@ function editServer() {
 }
 
 function deleteServer() {
-    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
+    var jsonToModify = remotefs.readJsonSync(serversPath);
     var result = jsonToModify["servers"].filter(function (obj) {
         return obj.uuid === getSelectedServer();
     })[0];
@@ -114,7 +114,7 @@ function restoreDefaultServers() {
 }
 
 function loadGameVersions() {
-    var versionJson = JSON.parse(remotefs.readFileSync(versionsPath));
+    var versionJson = remotefs.readJsonSync(versionsPath);
     versionArray = versionJson["versions"];
     $.each(versionArray, function (key, value) {
         $(new Option(value.name, "val")).appendTo("#addserver-versionselect");
@@ -123,12 +123,12 @@ function loadGameVersions() {
 }
 
 function loadConfig() {
-    // load config object globally
-    config = JSON.parse(remotefs.readFileSync(configPath));
+    // Load config object globally
+    config = remotefs.readJsonSync(configPath);
 }
 
 function loadServerList() {
-    var serverJson = JSON.parse(remotefs.readFileSync(serversPath));
+    var serverJson = remotefs.readJsonSync(serversPath);
     serverArray = serverJson["servers"];
 
     $(".server-listing-entry").remove(); // Clear out old stuff, if any
@@ -168,16 +168,16 @@ function performCacheSwap(newVersion) {
     var record = path.join(userData, ".lastver");
     var lastVersion = remotefs.readFileSync(record, (encoding = "utf8"));
 
-    // make note of what version we are launching for next launch
+    // Make note of what version we are launching for next launch
     remotefs.writeFileSync(record, newVersion);
 
     // If cache renaming would result in a no-op (ex. launching the same version
-    // two times), then skip it. this avoids permissions errors with multiple clients
+    // two times), then skip it. This avoids permissions errors with multiple clients
     // (file/folder is already open in another process)
     var skip = false;
 
     if (remotefs.existsSync(currentCache)) {
-        // cache already exists, find out what version it belongs to
+        // Cache already exists, find out what version it belongs to
         if (remotefs.existsSync(record)) {
             if (lastVersion != newVersion) {
                 // Remove the directory we're trying to store the 
@@ -214,7 +214,7 @@ function setGameInfo(serverUUID) {
         return obj.name === result.version;
     })[0];
 
-    // if cache swapping property exists AND is `true`, run cache swapping logic
+    // If cache swapping property exists AND is `true`, run cache swapping logic
     if (config["cache-swapping"]) {
         try {
             performCacheSwap(gameVersion.name);
@@ -333,9 +333,7 @@ $("#server-table").on("dblclick", ".server-listing-entry", function (event) {
 });
 
 $("#of-editservermodal").on("show.bs.modal", function (e) {
-    var jsonToModify = JSON.parse(
-        remotefs.readFileSync(path.join(userData, "servers.json"))
-    );
+    var jsonToModify = remotefs.readJsonSync(path.join(userData, "servers.json"));
     $.each(jsonToModify["servers"], function (key, value) {
         if (value["uuid"] == getSelectedServer()) {
             $("#editserver-descinput")[0].value = value["description"];

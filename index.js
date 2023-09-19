@@ -9,7 +9,7 @@ var BrowserWindow = require("browser-window");
 var mainWindow = null;
 
 var unityHomeDir = path.join(__dirname, "../../WebPlayer");
-// if running in non-packaged / development mode, this dir will be slightly different
+// If running in non-packaged / development mode, this dir will be slightly different
 if (process.env.npm_node_execpath) {
     unityHomeDir = path.join(app.getAppPath(), "/build/WebPlayer");
 }
@@ -31,13 +31,13 @@ var versionsPath = path.join(userData, "versions.json");
 
 function initialSetup(firstTime) {
     if (!firstTime) {
-        // migration from pre-1.4
+        // Migration from pre-1.4
         // Back everything up, just in case
         fs.copySync(configPath, configPath + ".bak");
         fs.copySync(serversPath, serversPath + ".bak");
         fs.copySync(versionsPath, versionsPath + ".bak");
     } else {
-        // first-time setup
+        // First-time setup
         // Copy default servers
         fs.copySync(
             path.join(__dirname, "/defaults/servers.json"),
@@ -141,7 +141,6 @@ function showMainWindow() {
 
     mainWindow.webContents.on("will-navigate", function (event, url) {
         event.preventDefault();
-        // TODO: showMessageBox rather than showErrorBox?
         switch (url) {
             case "https://audience.fusionfall.com/ff/regWizard.do?_flowId=fusionfall-registration-flow":
                 var errorMessage =
