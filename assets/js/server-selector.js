@@ -5,13 +5,15 @@ var path = remote.require("path");
 var url = remote.require("url");
 var http = remote.require("http");
 var createHash = remote.require("crypto").createHash;
+var async = remote.require("async");
 
 var userData = remote.require("app").getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
+var hashPath = path.join(userData, "hash.txt");
 
-var chunk_size = 1 << 16;
+var chunkSize = 1 << 16;
 var gb = 1 << 30;
 var cdn = "cdn.dexlabs.systems";
 
@@ -180,7 +182,7 @@ function getCacheLabelText(sizes) {
     var labelText = (sizes.intact / gb).toFixed(2) + " / " + (sizes.total / gb).toFixed(2) + " GB";
 
     if (sizes.altered > 0) {
-        labelText += " (" + (sizes.altered / gb).toFixed(2) + " GB Altered)";
+        labelText += "\n(" + (sizes.altered / gb).toFixed(2) + " GB Altered)";
     }
 
     return labelText;
@@ -253,13 +255,12 @@ function getCacheInfoCell(versionString, cacheMode) {
 }
 
 function getFileHash(filePath) {
-    var totalReadCount = 0, readCount = 0;
-    var buff = new Buffer(chunk_size);
+    var readCount = 0;
+    var buff = new Buffer(chunkSize);
     var hash = createHash("sha256");
     var file = remotefs.openSync(filePath, "r");
 
-    while ((readCount = remotefs.readSync(file, buff, 0, chunk_size, totalReadCount)) > 0) {
-        totalReadCount += readCount;
+    while ((readCount = remotefs.readSync(file, buff, 0, chunkSize, null)) > 0) {
         hash.update(buff.slice(0, readCount));
     }
 
@@ -267,6 +268,7 @@ function getFileHash(filePath) {
     return hash.digest(encoding="hex");
 }
 
+/*
 function downloadFiles(root, client, sizes, hashes, updateCallback, endCallback) {
     if (hashes.length === 0) {
         endCallback();
@@ -278,7 +280,7 @@ function downloadFiles(root, client, sizes, hashes, updateCallback, endCallback)
     delete hashes[filePath];
 
     var fullFilePath = path.join(root, filePath);
-    var fullCDNPath = ["http:/", cdn, "ff", "big", filePath].join("/");
+    var fullCDNPath = "http://" + [cdn, "ff", "big", filePath].join("/");
 
     if (remotefs.existsSync(fullFilePath) && fileHash === getFileHash(fullFilePath)) {
         console.log(fullFilePath + " is intact, skipping...");
@@ -308,8 +310,10 @@ function downloadFile(client, fullCDNPath, fullFilePath, callback) {
 
     var urlParts = url.parse(fullCDNPath);
     var req = client.request("GET", urlParts.path, {
-        "host": urlParts.hostname,
-        "Content-Type": "application/octet-stream"
+        "Host": urlParts.hostname,
+        "Content-Type": "application/octet-stream",
+        "Referer": fullCDNPath.split("/").slice(0, 4).join("/") + "/",
+        "Connection": "keep-alive",
     });
     var writeStream = remotefs.createWriteStream(fullFilePath);
 
@@ -330,7 +334,7 @@ function downloadFile(client, fullCDNPath, fullFilePath, callback) {
     writeStream.on("error", retry);
 
     req.on("response", function (res) {
-        if (res.statusCode !== 200) {
+        if (res.statusCode >= 300) {
             console.log("Error in fetching file " + fullFilePath + " from " + fullCDNPath);
             retry("Status Code: " + res.statusCode);
             return;
@@ -346,15 +350,91 @@ function downloadFile(client, fullCDNPath, fullFilePath, callback) {
 
     req.end();
 }
+*/
+
+
+function downloadFile(nginxDir, localDir, relativePath, callback) {
+    var nginxUrl = path.dirname(nginxDir) + "/" + relativePath;
+    var localPath = path.join(localDir, relativePath);
+
+    // Create directories if they don't exist
+    var dirName = path.dirname(localPath);
+    remotefs.ensureDirSync(dirName);
+
+    // HTTP request to download the file
+    var fileStream = remotefs.createWriteStream(localPath);
+    var urlParse = url.parse(nginxUrl);
+    var client = http.createClient(80, urlParse.hostname);
+    var options = {
+        url: urlParse.hostname,
+        port: 80,
+        path: urlParse.path,
+        headers: {
+            "Host": urlParse.hostname,
+            "Content-Type": "application/octet-stream",
+            "Referer": nginxDir,
+            "Connection": "keep-alive",
+        }
+    };
+
+    var request = client.request("GET", urlParse.path, options, function(response) {
+        // Handle errors
+        response.on("error", function(err) {
+            console.error("Error downloading " + relativePath + ": " + err.message);
+            retryDownload(nginxDir, localDir, relativePath, callback); // Retry download
+        });
+
+        response.pipe(fileStream);
+
+        // When the download is complete, invoke the callback
+        response.on("end", function() {
+            fileStream.end();
+            callback(null, relativePath);
+        });
+    });
+
+    // Handle HTTP errors
+    request.on("error", function(err) {
+        console.error("Error downloading " + relativePath + ": " + err.message);
+        retryDownload(nginxDir, localDir, relativePath, callback); // Retry download
+    });
+
+    request.end();
+}
+
+  // Function to retry downloading a file after a delay
+function retryDownload(nginxDir, localDir, relativePath, callback) {
+    setTimeout(function() {
+        downloadFile(nginxDir, localDir, relativePath, callback);
+    }, 1000); // Retry after 1 second
+}
+
+  // Function to download multiple files in parallel
+function downloadFiles(nginxDir, localDir, fileRelativePaths, allDoneCallback) {
+    async.eachLimit(
+        fileRelativePaths,
+        5, // Number of parallel downloads
+        function(relativePath, callback) {
+            downloadFile(nginxDir, localDir, relativePath, callback);
+        },
+        function(err) {
+            if (err) {
+                console.error("Download failed: " + err);
+            } else {
+                console.log("All files downloaded successfully.");
+                allDoneCallback();
+            }
+        }
+    );
+}
+
 
 function loadCacheList() {
-    var versionjson = JSON.parse(
-        remotefs.readFileSync(path.join(userDir, "versions.json"))
-    );
+    var versionjson = remotefs.readJsonSync(versionsPath);
     versionArray = versionjson["versions"];
 
     versionHashes = { playable: {}, offline: {} };
-    var hashlines = remotefs.readFileSync(path.join(userDir, "hash.txt"), "utf-8");
+    var hashlines = remotefs.readFileSync(hashPath, ( encoding = "utf-8" ));
     $.each(hashlines.split(/\r\n|\r|\n/), function (key, line) {
         if (line.length === 0) {
             return;
@@ -404,7 +484,10 @@ function loadCacheList() {
 }
 
 function deletePlayableCache(versionString) {
-    var cacheroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache");
+    var cacheRoot = path.join(
+        userData,
+        "/../../LocalLow/Unity/Web Player/Cache"
+    );
 
     resetCacheNames();
 
@@ -412,26 +495,30 @@ function deletePlayableCache(versionString) {
         return;
     }
 
-    remotefs.removeSync(path.join(cacheroot, versionString));
+    remotefs.removeSync(path.join(cacheRoot, versionString));
     console.log("Playable cache " + versionString + " has been removed!");
 
     checkPlayableCache(versionString);
 }
 
 function downloadOfflineCache(versionString) {
-    var offlineroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache", "Offline");
+    var offlineRoot = path.join(
+        userData,
+        "/../../LocalLow/Unity/Web Player/Cache/Offline"
+    );
 
     var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
     var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
     var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
     var label = document.getElementById(getCacheElemID(versionString, "offline", "label"));
 
+    var version = versionArray.filter(function (value) {
+        return value.name === versionString;
+    })[0];
     var sizes = {
         intact: 0,
         altered: 0,
-        total: versionArray.filter(function (value) {
-            return value.name === versionString;
-        })[0].offline_size
+        total: version.offline_size
     };
 
     buttonDownload.setAttribute("disabled", "");
@@ -441,9 +528,12 @@ function downloadOfflineCache(versionString) {
     buttonDownload.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
     buttonFix.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
 
+    /*
+    var client = http.createClient(80, cdn);
+
     downloadFiles(
-        offlineroot,
-        http.createClient(80, cdn),
+        offlineRoot,
+        client,
         sizes,
         JSON.parse(JSON.stringify(versionHashes.offline[versionString])),
         function (sizesNow) {
@@ -455,19 +545,37 @@ function downloadOfflineCache(versionString) {
             checkOfflineCache(versionString);
         }
     );
+    */
+
+    downloadFiles(
+        version.url,
+        offlineRoot,
+        Object.keys(JSON.parse(JSON.stringify(versionHashes.offline[versionString]))),
+        function () {
+            buttonDownload.children[0].setAttribute("class", "fas fa-download");
+            buttonFix.children[0].setAttribute("class", "fas fa-hammer");
+            checkOfflineCache(versionString);
+        }
+    );
 }
 
 function deleteOfflineCache(versionString) {
-    var offlineroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache", "Offline");
+    var offlineRoot = path.join(
+        userData,
+        "/../../LocalLow/Unity/Web Player/Cache/Offline"
+    );
 
-    remotefs.removeSync(path.join(offlineroot, versionString));
+    remotefs.removeSync(path.join(offlineRoot, versionString));
     console.log("Offline cache " + versionString + " has been removed!");
 
     checkOfflineCache(versionString);
 }
 
 function checkPlayableCache(versionString) {
-    var cacheroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache");
+    var cacheRoot = path.join(
+        userData,
+        "/../../LocalLow/Unity/Web Player/Cache"
+    );
 
     var button = document.getElementById(getCacheButtonID(versionString, "playable", "delete"));
     var label = document.getElementById(getCacheElemID(versionString, "playable", "label"));
@@ -483,7 +591,7 @@ function checkPlayableCache(versionString) {
     resetCacheNames();
 
     $.each(versionHashes.playable[versionString], function (filePath, fileHash) {
-        var fullFilePath = path.join(cacheroot, filePath);
+        var fullFilePath = path.join(cacheRoot, filePath);
 
         if (remotefs.existsSync(fullFilePath)) {
             var fileSize = remotefs.statSync(fullFilePath).size;
@@ -506,7 +614,10 @@ function checkPlayableCache(versionString) {
 }
 
 function checkOfflineCache(versionString) {
-    var offlineroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache", "Offline");
+    var offlineRoot = path.join(
+        userData,
+        "/../../LocalLow/Unity/Web Player/Cache/Offline"
+    );
 
     var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
     var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
@@ -522,7 +633,7 @@ function checkOfflineCache(versionString) {
     };
 
     $.each(versionHashes.offline[versionString], function (filePath, fileHash) {
-        var fullFilePath = path.join(offlineroot, filePath);
+        var fullFilePath = path.join(offlineRoot, filePath);
 
         if (remotefs.existsSync(fullFilePath)) {
             var fileSize = remotefs.statSync(fullFilePath).size;
@@ -553,20 +664,23 @@ function checkOfflineCache(versionString) {
 }
 
 function resetCacheNames() {
-    var cacheroot = path.join(userDir, "..", "..", "LocalLow", "Unity", "Web Player", "Cache");
-    var currentcache = path.join(cacheroot, "Fusionfall");
-    var record = path.join(userDir, ".lastver");
+    var cacheRoot = path.join(
+        userData,
+        "/../../LocalLow/Unity/Web Player/Cache"
+    );
+    var currentCache = path.join(cacheRoot, "Fusionfall");
+    var record = path.join(userData, ".lastver");
 
-    if (!remotefs.existsSync(currentcache)) {
+    if (!remotefs.existsSync(currentCache)) {
         return;
     }
 
-    lastversion = remotefs.readFileSync(record);
+    var lastVersion = remotefs.readFileSync(record, (encoding = "utf8"));
     remotefs.renameSync(
-        currentcache,
-        path.join(cacheroot, lastversion)
+        currentCache,
+        path.join(cacheRoot, lastVersion)
     );
-    console.log("Current cache " + lastversion + " has been renamed to its original name.");
+    console.log("Current cache " + lastVersion + " has been renamed to its original name.");
 }
 
 function performCacheSwap(newVersion) {

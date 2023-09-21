@@ -74,6 +74,7 @@
         "afterPack": "./build/after-pack.js"
     },
     "dependencies": {
-        "fs-extra": "2.0.0"
+        "fs-extra": "2.0.0",
+        "async": "1.5.2"
     }
 }

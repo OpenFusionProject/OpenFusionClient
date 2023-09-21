@@ -16,6 +16,7 @@ if (process.env.npm_node_execpath) {
 
 process.env["UNITY_HOME_DIR"] = unityHomeDir;
 process.env["UNITY_DISABLE_PLUGIN_UPDATES"] = "yes";
+process.env["WINE_LARGE_ADDRESS_AWARE"] = "1";
 
 app.commandLine.appendSwitch("enable-npapi");
 app.commandLine.appendSwitch(
