@@ -4,6 +4,9 @@ var fs = require("fs-extra");
 var ipc = require("ipc");
 var os = require("os");
 var path = require("path");
+var url = require("url");
+var http = require("http");
+var async = require("async");
 
 var BrowserWindow = require("browser-window");
 var mainWindow = null;
@@ -83,6 +86,7 @@ app.on("ready", function () {
         show: false,
         "web-preferences": {
             plugins: true,
+            nodeIntegration: true,
         },
     });
     mainWindow.setMinimumSize(640, 480);
@@ -168,3 +172,100 @@ function showMainWindow() {
         }
     });
 }
+
+function downloadFile(nginxDir, localDir, relativePath, callback, updateCallback) {
+    var nginxUrl = path.dirname(nginxDir) + "/" + relativePath;
+    var localPath = path.join(localDir, relativePath);
+
+    // Create directories if they don't exist
+    var dirName = path.dirname(localPath);
+    fs.ensureDirSync(dirName);
+
+    // HTTP request to download the file
+    var fileStream = fs.createWriteStream(localPath);
+
+    var urlParse = url.parse(nginxUrl);
+    var client = http.createClient(80, urlParse.hostname);
+    var options = {
+        method: "GET",
+        url: urlParse.hostname,
+        port: 80,
+        path: urlParse.path,
+        headers: {
+            "Host": urlParse.hostname,
+            "Content-Type": "application/octet-stream",
+            "Referer": nginxDir,
+            "Connection": "keep-alive",
+        }
+    };
+
+    var request = client.request("GET", urlParse.path, options);
+
+    request.on("response", function(response) {
+        response.pipe(fileStream);
+
+        // When the download is complete, invoke the callback
+        response.on("end", function() {
+            fileStream.end();
+            updateCallback(fs.statSync(localPath).size);
+            callback(null, relativePath);
+        });
+
+        // Handle errors
+        response.on("error", function(err) {
+            console.error("Error downloading " + relativePath + ": " + err.message);
+            retryDownload(nginxDir, localDir, relativePath, callback, updateCallback); // Retry download
+        });
+    });
+
+    // Handle HTTP errors
+    request.on("error", function(err) {
+        console.error("Error downloading " + relativePath + ": " + err.message);
+        retryDownload(nginxDir, localDir, relativePath, callback, updateCallback); // Retry download
+    });
+
+    request.end();
+}
+
+  // Function to retry downloading a file after a delay
+function retryDownload(nginxDir, localDir, relativePath, callback, updateCallback) {
+    setTimeout(function() {
+        downloadFile(nginxDir, localDir, relativePath, callback, updateCallback);
+    }, 1000); // Retry after 1 second
+}
+
+  // Function to download multiple files in parallel
+function downloadFiles(nginxDir, localDir, fileRelativePaths, updateCallback, allDoneCallback) {
+    async.eachLimit(
+        fileRelativePaths,
+        5, // Number of parallel downloads
+        function(relativePath, callback) {
+            downloadFile(nginxDir, localDir, relativePath, callback, updateCallback);
+        },
+        function(err) {
+            if (err) {
+                console.error("Download failed: " + err);
+            } else {
+                console.log("All files downloaded successfully.");
+                allDoneCallback();
+            }
+        }
+    );
+}
+
+ipc.on("download-files", function (event, arg) {
+    downloadFiles(
+        arg.nginxDir,
+        arg.localDir,
+        arg.fileRelativePaths,
+        function (size) {
+            mainWindow.webContents.send("download-update", {
+                size: size,
+                versionString: arg.versionString,
+            });
+        },
+        function () {
+            mainWindow.webContents.send("download-success", arg.versionString);
+        }
+    );
+});

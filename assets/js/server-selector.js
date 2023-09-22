@@ -1,3 +1,4 @@
+var ipc = require("ipc");
 var remote = require("remote");
 var remotefs = remote.require("fs-extra");
 var dns = remote.require("dns");
@@ -19,6 +20,7 @@ var cdn = "cdn.dexlabs.systems";
 
 var versionArray;
 var versionHashes;
+var versionSizes;
 var serverArray;
 var config;
 
@@ -460,7 +462,19 @@ function loadCacheList() {
 
     $(".cache-listing-entry").remove();
 
+    versionSizes = { playable: {}, offline: {} };
     $.each(versionArray, function (key, value) {
+        versionSizes.playable[value.name] = {
+            intact: 0,
+            altered: 0,
+            total: value.playable_size,
+        };
+        versionSizes.offline[value.name] = {
+            intact: 0,
+            altered: 0,
+            total: value.offline_size,
+        };
+
         var row = document.createElement("tr");
         row.className = "cache-listing-entry"
         row.setAttribute("id", value.name);
@@ -547,6 +561,7 @@ function downloadOfflineCache(versionString) {
     );
     */
 
+    /*
     downloadFiles(
         version.url,
         offlineRoot,
@@ -557,6 +572,13 @@ function downloadOfflineCache(versionString) {
             checkOfflineCache(versionString);
         }
     );
+    */
+   ipc.send("download-files", {
+        nginxDir: version.url,
+        localDir: offlineRoot,
+        fileRelativePaths: Object.keys(versionHashes.offline[versionString]),
+        versionString: versionString,
+   });
 }
 
 function deleteOfflineCache(versionString) {
@@ -580,13 +602,7 @@ function checkPlayableCache(versionString) {
     var button = document.getElementById(getCacheButtonID(versionString, "playable", "delete"));
     var label = document.getElementById(getCacheElemID(versionString, "playable", "label"));
 
-    var sizes = {
-        intact: 0,
-        altered: 0,
-        total: versionArray.filter(function (value) {
-            return value.name === versionString;
-        })[0].playable_size
-    };
+    var sizes = versionSizes.playable[versionString];
 
     resetCacheNames();
 
@@ -624,13 +640,7 @@ function checkOfflineCache(versionString) {
     var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
     var label = document.getElementById(getCacheElemID(versionString, "offline", "label"));
 
-    var sizes = {
-        intact: 0,
-        altered: 0,
-        total: versionArray.filter(function (value) {
-            return value.name === versionString;
-        })[0].offline_size
-    };
+    var sizes = versionSizes.offline[versionString];
 
     $.each(versionHashes.offline[versionString], function (filePath, fileHash) {
         var fullFilePath = path.join(offlineRoot, filePath);
@@ -882,4 +892,21 @@ $("#of-deleteservermodal").on("show.bs.modal", function (e) {
         return obj.uuid === getSelectedServer();
     })[0];
     $("#deleteserver-servername").html(result.description);
+});
+
+ipc.on("download-update", function (arg) {
+    var sizes = versionSizes.offline[arg.versionString];
+    sizes.intact += arg.size;
+
+    var label = document.getElementById(getCacheElemID(arg.versionString, "offline", "label"));
+    label.innerHTML = getCacheLabelText(sizes);
+});
+
+ipc.on("download-success", function (versionString) {
+    var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
+    var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
+
+    buttonDownload.children[0].setAttribute("class", "fas fa-download");
+    buttonFix.children[0].setAttribute("class", "fas fa-hammer");
+    checkOfflineCache(versionString);
 });
