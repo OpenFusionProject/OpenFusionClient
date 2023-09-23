@@ -7,6 +7,7 @@ var path = require("path");
 var url = require("url");
 var http = require("http");
 var async = require("async");
+var createHash = require("crypto").createHash;
 
 var BrowserWindow = require("browser-window");
 var mainWindow = null;
@@ -121,6 +122,39 @@ app.on("ready", function () {
 
     mainWindow.on("closed", function () {
         mainWindow = null;
+    });
+
+    ipc.on("download-files", function (event, arg) {
+        downloadFiles(
+            arg.nginxDir,
+            arg.localDir,
+            arg.fileRelativePaths,
+            function (size) {
+                mainWindow.webContents.send("download-update", {
+                    size: size,
+                    versionString: arg.versionString,
+                });
+            },
+            function () {
+                mainWindow.webContents.send("download-success", arg.versionString);
+            }
+        );
+    });
+
+    ipc.on("hash-check", function (event, arg) {
+        mainWindow.webContents.send("hash-update", {
+            cacheMode: arg.cacheMode,
+            versionString: arg.versionString,
+            // no size sent, reset sizes
+        });
+
+        checkHashes(arg.localDir, arg.hashes, function (sizes) {
+            mainWindow.webContents.send("hash-update", {
+                cacheMode: arg.cacheMode,
+                versionString: arg.versionString,
+                sizes: sizes,
+            });
+        });
     });
 });
 
@@ -239,10 +273,10 @@ function downloadFiles(nginxDir, localDir, fileRelativePaths, updateCallback, al
     async.eachLimit(
         fileRelativePaths,
         5, // Number of parallel downloads
-        function(relativePath, callback) {
+        function (relativePath, callback) {
             downloadFile(nginxDir, localDir, relativePath, callback, updateCallback);
         },
-        function(err) {
+        function (err) {
             if (err) {
                 console.error("Download failed: " + err);
             } else {
@@ -253,19 +287,66 @@ function downloadFiles(nginxDir, localDir, fileRelativePaths, updateCallback, al
     );
 }
 
-ipc.on("download-files", function (event, arg) {
-    downloadFiles(
-        arg.nginxDir,
-        arg.localDir,
-        arg.fileRelativePaths,
-        function (size) {
-            mainWindow.webContents.send("download-update", {
-                size: size,
-                versionString: arg.versionString,
-            });
+function checkHash(localDir, relativePath, fileHash, callback, updateCallback) {
+    var localPath = path.join(localDir, relativePath);
+
+    var chunkSize = 1 << 16;
+    var totalCount = 0;
+    var buff = new Buffer(chunkSize);
+    var hash = createHash("sha256");
+
+    fs.open(localPath, "r", function (openErr, file) {
+        if (openErr) {
+            if (openErr.code !== "ENOENT") {
+                console.log("Error opening file for hash check: " + openErr);
+            }
+            return;
+        }
+
+        var updater;
+        var reader = function () {
+            fs.read(file, buff, 0, chunkSize, null, updater);
+        };
+        updater = function (readErr, readSize) {
+            if (readErr) {
+                console.log("Error reading file for hash check: " + readErr);
+            } else if (readSize > 0) {
+                hash.update(buff.slice(0, readSize));
+                totalCount += readSize;
+
+                reader();
+            } else {
+                var state = (fileHash === hash.digest(encoding="hex")) ? "intact" : "altered";
+                var sizes = { intact: 0, altered: 0 };
+                sizes[state] = totalCount;
+
+                fs.close(file, function (fileCloseErr) {
+                    if (fileCloseErr) {
+                        console.log("Error closing file for hash check: " + fileCloseErr);
+                    } else {
+                        callback(null, relativePath);
+                        updateCallback(sizes);
+                    }
+                });
+            }
+        };
+
+        reader();
+    });
+}
+
+function checkHashes(localDir, hashes, updateCallback) {
+    console.log(hashes);
+    async.eachLimit(
+        Object.keys(hashes),
+        20,
+        function (relativePath, callback) {
+            checkHash(localDir, relativePath, hashes[relativePath], callback, updateCallback);
         },
-        function () {
-            mainWindow.webContents.send("download-success", arg.versionString);
+        function (err) {
+            if (err) {
+                console.log("Hash check failed: " + err);
+            }
         }
     );
-});
+}
