@@ -13,6 +13,11 @@ var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
 var hashPath = path.join(userData, "hash.txt");
+var cacheRoot = path.join(
+    userData,
+    "/../../LocalLow/Unity/Web Player/Cache"
+);
+var offlineRoot = path.join(cacheRoot, "Offline");
 
 var chunkSize = 1 << 16;
 var gb = 1 << 30;
@@ -492,17 +497,22 @@ function loadCacheList() {
 
         $("#cache-tablebody").append(row);
 
-        checkPlayableCache(value.name);
-        checkOfflineCache(value.name);
+        ipc.send("hash-check", {
+            localDir: cacheRoot,
+            cacheMode: "playable",
+            versionString: value.name,
+            hashes: versionHashes.playable[value.name],
+        });
+        ipc.send("hash-check", {
+            localDir: offlineRoot,
+            cacheMode: "offline",
+            versionString: value.name,
+            hashes: versionHashes.offline[value.name],
+        });
     })
 }
 
 function deletePlayableCache(versionString) {
-    var cacheRoot = path.join(
-        userData,
-        "/../../LocalLow/Unity/Web Player/Cache"
-    );
-
     resetCacheNames();
 
     if (versionString === "Offline") {
@@ -516,11 +526,6 @@ function deletePlayableCache(versionString) {
 }
 
 function downloadOfflineCache(versionString) {
-    var offlineRoot = path.join(
-        userData,
-        "/../../LocalLow/Unity/Web Player/Cache/Offline"
-    );
-
     var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
     var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
     var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
@@ -582,11 +587,6 @@ function downloadOfflineCache(versionString) {
 }
 
 function deleteOfflineCache(versionString) {
-    var offlineRoot = path.join(
-        userData,
-        "/../../LocalLow/Unity/Web Player/Cache/Offline"
-    );
-
     remotefs.removeSync(path.join(offlineRoot, versionString));
     console.log("Offline cache " + versionString + " has been removed!");
 
@@ -594,11 +594,6 @@ function deleteOfflineCache(versionString) {
 }
 
 function checkPlayableCache(versionString) {
-    var cacheRoot = path.join(
-        userData,
-        "/../../LocalLow/Unity/Web Player/Cache"
-    );
-
     var button = document.getElementById(getCacheButtonID(versionString, "playable", "delete"));
     var label = document.getElementById(getCacheElemID(versionString, "playable", "label"));
 
@@ -630,11 +625,6 @@ function checkPlayableCache(versionString) {
 }
 
 function checkOfflineCache(versionString) {
-    var offlineRoot = path.join(
-        userData,
-        "/../../LocalLow/Unity/Web Player/Cache/Offline"
-    );
-
     var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
     var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
     var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
@@ -674,10 +664,6 @@ function checkOfflineCache(versionString) {
 }
 
 function resetCacheNames() {
-    var cacheRoot = path.join(
-        userData,
-        "/../../LocalLow/Unity/Web Player/Cache"
-    );
     var currentCache = path.join(cacheRoot, "Fusionfall");
     var record = path.join(userData, ".lastver");
 
@@ -694,10 +680,6 @@ function resetCacheNames() {
 }
 
 function performCacheSwap(newVersion) {
-    var cacheRoot = path.join(
-        userData,
-        "/../../LocalLow/Unity/Web Player/Cache"
-    );
     var currentCache = path.join(cacheRoot, "FusionFall");
     var newCache = path.join(cacheRoot, newVersion);
     var record = path.join(userData, ".lastver");
@@ -909,4 +891,19 @@ ipc.on("download-success", function (versionString) {
     buttonDownload.children[0].setAttribute("class", "fas fa-download");
     buttonFix.children[0].setAttribute("class", "fas fa-hammer");
     checkOfflineCache(versionString);
+});
+
+ipc.on("hash-update", function (arg) {
+    var sizes = versionSizes[arg.cacheMode][arg.versionString];
+
+    if (arg.sizes) {
+        sizes.intact += arg.sizes.intact;
+        sizes.altered += arg.sizes.altered;
+    } else {
+        sizes.intact = 0;
+        sizes.altered = 0;
+    }
+
+    var label = document.getElementById(getCacheElemID(arg.versionString, arg.cacheMode, "label"));
+    label.innerHTML = getCacheLabelText(sizes);
 });
