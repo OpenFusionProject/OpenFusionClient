@@ -125,36 +125,62 @@ app.on("ready", function () {
     });
 
     ipc.on("download-files", function (event, arg) {
+        mainWindow.webContents.send("storage-loading-start", {
+            cacheMode: arg.cacheMode,
+            versionString: arg.versionString,
+            resetIntactSize: false,
+        });
+
         downloadFiles(
-            arg.nginxDir,
+            arg.cdnDir,
             arg.localDir,
-            arg.fileRelativePaths,
-            function (size) {
-                mainWindow.webContents.send("download-update", {
-                    size: size,
+            arg.hashes,
+            function (sizes) {
+                mainWindow.webContents.send("storage-label-update", {
+                    cacheMode: arg.cacheMode,
                     versionString: arg.versionString,
+                    sizes: sizes,
                 });
             },
             function () {
-                mainWindow.webContents.send("download-success", arg.versionString);
+                mainWindow.webContents.send("download-complete", {
+                    cacheMode: arg.cacheMode,
+                    versionString: arg.versionString,
+                });
+            },
+            function (err) {
+                dialog.showErrorBox("Error!", "Download was unsuccessful:\n" + err);
             }
         );
     });
 
     ipc.on("hash-check", function (event, arg) {
-        mainWindow.webContents.send("hash-update", {
+        mainWindow.webContents.send("storage-loading-start", {
             cacheMode: arg.cacheMode,
             versionString: arg.versionString,
-            // no size sent, reset sizes
+            resetIntactSize: true,
         });
 
-        checkHashes(arg.localDir, arg.hashes, function (sizes) {
-            mainWindow.webContents.send("hash-update", {
-                cacheMode: arg.cacheMode,
-                versionString: arg.versionString,
-                sizes: sizes,
-            });
-        });
+        checkHashes(
+            arg.localDir,
+            arg.hashes,
+            function (sizes) {
+                mainWindow.webContents.send("storage-label-update", {
+                    cacheMode: arg.cacheMode,
+                    versionString: arg.versionString,
+                    sizes: sizes,
+                });
+            },
+            function () {
+                mainWindow.webContents.send("hash-check-complete", {
+                    cacheMode: arg.cacheMode,
+                    versionString: arg.versionString,
+                });
+            },
+            function (err) {
+                dialog.showErrorBox("Error!", "Could not verify file integrity:\n" + err);
+            }
+        );
     });
 });
 
@@ -207,78 +233,71 @@ function showMainWindow() {
     });
 }
 
-function downloadFile(nginxDir, localDir, relativePath, callback, updateCallback) {
-    var nginxUrl = path.dirname(nginxDir) + "/" + relativePath;
+function downloadFile(cdnDir, localDir, relativePath, fileHash, callback, updateCallback) {
+    var nginxUrl = path.dirname(cdnDir) + "/" + relativePath;
     var localPath = path.join(localDir, relativePath);
 
     // Create directories if they don't exist
     var dirName = path.dirname(localPath);
-    fs.ensureDirSync(dirName);
-
-    // HTTP request to download the file
-    var fileStream = fs.createWriteStream(localPath);
-
-    var urlParse = url.parse(nginxUrl);
-    var client = http.createClient(80, urlParse.hostname);
-    var options = {
-        method: "GET",
-        url: urlParse.hostname,
-        port: 80,
-        path: urlParse.path,
-        headers: {
-            "Host": urlParse.hostname,
-            "Content-Type": "application/octet-stream",
-            "Referer": nginxDir,
-            "Connection": "keep-alive",
+    fs.ensureDir(dirName, function (createDirErr) {
+        if (createDirErr) {
+            console.log("Could not create path " + dirName + ": " + createDirErr);
+            callback(createDirErr);
+            return;
         }
-    };
 
-    var request = client.request("GET", urlParse.path, options);
+        // HTTP request to download the file
+        var fileStream = fs.createWriteStream(localPath);
 
-    request.on("response", function(response) {
-        response.pipe(fileStream);
+        var urlParse = url.parse(nginxUrl);
+        var client = http.createClient(80, urlParse.hostname);
+        var options = {
+            method: "GET",
+            url: urlParse.hostname,
+            port: 80,
+            path: urlParse.path,
+            headers: {
+                "Host": urlParse.hostname,
+                "Content-Type": "application/octet-stream",
+                "Referer": cdnDir,
+                "Connection": "keep-alive",
+            }
+        };
 
-        // When the download is complete, invoke the callback
-        response.on("end", function() {
-            fileStream.end();
-            updateCallback(fs.statSync(localPath).size);
-            callback(null, relativePath);
+        var request = client.request("GET", urlParse.path, options);
+
+        request.on("response", function (response) {
+            response.pipe(fileStream);
+
+            // When the download is complete, invoke the callback
+            response.on("end", function() {
+                fileStream.end();
+                checkHash(localDir, relativePath, fileHash, callback, updateCallback);
+            });
+
+            // Handle errors
+            response.on("error", callback);
         });
 
-        // Handle errors
-        response.on("error", function(err) {
-            console.error("Error downloading " + relativePath + ": " + err.message);
-            retryDownload(nginxDir, localDir, relativePath, callback, updateCallback); // Retry download
-        });
+        // Handle HTTP errors
+        request.on("error", callback);
+
+        request.end();
     });
-
-    // Handle HTTP errors
-    request.on("error", function(err) {
-        console.error("Error downloading " + relativePath + ": " + err.message);
-        retryDownload(nginxDir, localDir, relativePath, callback, updateCallback); // Retry download
-    });
-
-    request.end();
-}
-
-  // Function to retry downloading a file after a delay
-function retryDownload(nginxDir, localDir, relativePath, callback, updateCallback) {
-    setTimeout(function() {
-        downloadFile(nginxDir, localDir, relativePath, callback, updateCallback);
-    }, 1000); // Retry after 1 second
 }
 
   // Function to download multiple files in parallel
-function downloadFiles(nginxDir, localDir, fileRelativePaths, updateCallback, allDoneCallback) {
+function downloadFiles(cdnDir, localDir, hashes, updateCallback, allDoneCallback, errorCallback) {
     async.eachLimit(
-        fileRelativePaths,
+        Object.keys(hashes),
         5, // Number of parallel downloads
         function (relativePath, callback) {
-            downloadFile(nginxDir, localDir, relativePath, callback, updateCallback);
+            downloadFile(cdnDir, localDir, relativePath, hashes[relativePath], callback, updateCallback);
         },
         function (err) {
             if (err) {
                 console.error("Download failed: " + err);
+                errorCallback(err);
             } else {
                 console.log("All files downloaded successfully.");
                 allDoneCallback();
@@ -297,8 +316,11 @@ function checkHash(localDir, relativePath, fileHash, callback, updateCallback) {
 
     fs.open(localPath, "r", function (openErr, file) {
         if (openErr) {
-            if (openErr.code !== "ENOENT") {
+            if (openErr.code === "ENOENT") {
+                callback();
+            } else {
                 console.log("Error opening file for hash check: " + openErr);
+                callback(openErr);
             }
             return;
         }
@@ -310,6 +332,7 @@ function checkHash(localDir, relativePath, fileHash, callback, updateCallback) {
         updater = function (readErr, readSize) {
             if (readErr) {
                 console.log("Error reading file for hash check: " + readErr);
+                callback(readErr);
             } else if (readSize > 0) {
                 hash.update(buff.slice(0, readSize));
                 totalCount += readSize;
@@ -323,9 +346,10 @@ function checkHash(localDir, relativePath, fileHash, callback, updateCallback) {
                 fs.close(file, function (fileCloseErr) {
                     if (fileCloseErr) {
                         console.log("Error closing file for hash check: " + fileCloseErr);
+                        callback(fileCloseErr);
                     } else {
-                        callback(null, relativePath);
                         updateCallback(sizes);
+                        callback();
                     }
                 });
             }
@@ -335,8 +359,7 @@ function checkHash(localDir, relativePath, fileHash, callback, updateCallback) {
     });
 }
 
-function checkHashes(localDir, hashes, updateCallback) {
-    console.log(hashes);
+function checkHashes(localDir, hashes, updateCallback, allDoneCallback, errorCallback) {
     async.eachLimit(
         Object.keys(hashes),
         20,
@@ -346,6 +369,9 @@ function checkHashes(localDir, hashes, updateCallback) {
         function (err) {
             if (err) {
                 console.log("Hash check failed: " + err);
+                errorCallback(err);
+            } else {
+                allDoneCallback();
             }
         }
     );
