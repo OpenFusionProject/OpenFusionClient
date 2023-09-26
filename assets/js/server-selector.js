@@ -261,181 +261,6 @@ function getCacheInfoCell(versionString, cacheMode) {
     return cellCache;
 }
 
-function getFileHash(filePath) {
-    var readCount = 0;
-    var buff = new Buffer(chunkSize);
-    var hash = createHash("sha256");
-    var file = remotefs.openSync(filePath, "r");
-
-    while ((readCount = remotefs.readSync(file, buff, 0, chunkSize, null)) > 0) {
-        hash.update(buff.slice(0, readCount));
-    }
-
-    remotefs.closeSync(file);
-    return hash.digest(encoding="hex");
-}
-
-/*
-function downloadFiles(root, client, sizes, hashes, updateCallback, endCallback) {
-    if (hashes.length === 0) {
-        endCallback();
-        return;
-    }
-
-    var filePath = Object.keys(hashes)[0];
-    var fileHash = hashes[filePath];
-    delete hashes[filePath];
-
-    var fullFilePath = path.join(root, filePath);
-    var fullCDNPath = "http://" + [cdn, "ff", "big", filePath].join("/");
-
-    if (remotefs.existsSync(fullFilePath) && fileHash === getFileHash(fullFilePath)) {
-        console.log(fullFilePath + " is intact, skipping...");
-        return;
-    }
-
-    downloadFile(client, fullCDNPath, fullFilePath, function () {
-        var sizeRead = remotefs.statSync(fullFilePath).size;
-
-        if (fileHash === getFileHash(fullFilePath)) {
-            sizes.intact += sizeRead;
-        } else {
-            sizes.altered += sizeRead;
-        }
-
-        console.log(fullFilePath + " was downloaded from " + fullCDNPath);
-
-        setTimeout(function () {
-            updateCallback(sizes);
-            downloadFiles(root, client, sizes, hashes, updateCallback, endCallback);
-        }, 100);
-    });
-}
-
-function downloadFile(client, fullCDNPath, fullFilePath, callback) {
-    remotefs.ensureDirSync(path.dirname(fullFilePath));
-
-    var urlParts = url.parse(fullCDNPath);
-    var req = client.request("GET", urlParts.path, {
-        "Host": urlParts.hostname,
-        "Content-Type": "application/octet-stream",
-        "Referer": fullCDNPath.split("/").slice(0, 4).join("/") + "/",
-        "Connection": "keep-alive",
-    });
-    var writeStream = remotefs.createWriteStream(fullFilePath);
-
-    var retry = function (err) {
-        writeStream.end();
-        writeStream.destroy();
-
-        remotefs.removeSync(fullFilePath);
-
-        console.log("Error writing file " + fullFilePath + "\n" + err);
-
-        setTimeout(function () {
-            console.log("Retrying " + fullCDNPath);
-            downloadFile(client, fullCDNPath, fullFilePath, callback);
-        }, 1000);
-    }
-
-    writeStream.on("error", retry);
-
-    req.on("response", function (res) {
-        if (res.statusCode >= 300) {
-            console.log("Error in fetching file " + fullFilePath + " from " + fullCDNPath);
-            retry("Status Code: " + res.statusCode);
-            return;
-        }
-
-        res.pipe(writeStream);
-
-        res.on("end", callback);
-        res.on("error", retry);
-    });
-
-    req.on("error", retry);
-
-    req.end();
-}
-*/
-
-
-function downloadFile(nginxDir, localDir, relativePath, callback) {
-    var nginxUrl = path.dirname(nginxDir) + "/" + relativePath;
-    var localPath = path.join(localDir, relativePath);
-
-    // Create directories if they don't exist
-    var dirName = path.dirname(localPath);
-    remotefs.ensureDirSync(dirName);
-
-    // HTTP request to download the file
-    var fileStream = remotefs.createWriteStream(localPath);
-    var urlParse = url.parse(nginxUrl);
-    var client = http.createClient(80, urlParse.hostname);
-    var options = {
-        url: urlParse.hostname,
-        port: 80,
-        path: urlParse.path,
-        headers: {
-            "Host": urlParse.hostname,
-            "Content-Type": "application/octet-stream",
-            "Referer": nginxDir,
-            "Connection": "keep-alive",
-        }
-    };
-
-    var request = client.request("GET", urlParse.path, options, function(response) {
-        // Handle errors
-        response.on("error", function(err) {
-            console.error("Error downloading " + relativePath + ": " + err.message);
-            retryDownload(nginxDir, localDir, relativePath, callback); // Retry download
-        });
-
-        response.pipe(fileStream);
-
-        // When the download is complete, invoke the callback
-        response.on("end", function() {
-            fileStream.end();
-            callback(null, relativePath);
-        });
-    });
-
-    // Handle HTTP errors
-    request.on("error", function(err) {
-        console.error("Error downloading " + relativePath + ": " + err.message);
-        retryDownload(nginxDir, localDir, relativePath, callback); // Retry download
-    });
-
-    request.end();
-}
-
-  // Function to retry downloading a file after a delay
-function retryDownload(nginxDir, localDir, relativePath, callback) {
-    setTimeout(function() {
-        downloadFile(nginxDir, localDir, relativePath, callback);
-    }, 1000); // Retry after 1 second
-}
-
-  // Function to download multiple files in parallel
-function downloadFiles(nginxDir, localDir, fileRelativePaths, allDoneCallback) {
-    async.eachLimit(
-        fileRelativePaths,
-        5, // Number of parallel downloads
-        function(relativePath, callback) {
-            downloadFile(nginxDir, localDir, relativePath, callback);
-        },
-        function(err) {
-            if (err) {
-                console.error("Download failed: " + err);
-            } else {
-                console.log("All files downloaded successfully.");
-                allDoneCallback();
-            }
-        }
-    );
-}
-
-
 function loadCacheList() {
     var versionjson = remotefs.readJsonSync(versionsPath);
     versionArray = versionjson["versions"];
@@ -516,151 +341,48 @@ function deletePlayableCache(versionString) {
     resetCacheNames();
 
     if (versionString === "Offline") {
+        console.log("Cannot delete Offline directory!");
         return;
     }
 
     remotefs.removeSync(path.join(cacheRoot, versionString));
     console.log("Playable cache " + versionString + " has been removed!");
 
-    checkPlayableCache(versionString);
+    // this updates the labels etc. properly
+    ipc.send("hash-check", {
+        localDir: cacheRoot,
+        cacheMode: "playable",
+        versionString: versionString,
+        hashes: versionHashes.playable[versionString],
+    });
 }
 
 function downloadOfflineCache(versionString) {
-    var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
-    var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
-    var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
-    var label = document.getElementById(getCacheElemID(versionString, "offline", "label"));
-
     var version = versionArray.filter(function (value) {
         return value.name === versionString;
     })[0];
-    var sizes = {
-        intact: 0,
-        altered: 0,
-        total: version.offline_size
-    };
 
-    buttonDownload.setAttribute("disabled", "");
-    buttonFix.setAttribute("disabled", "");
-    buttonDelete.setAttribute("disabled", "");
-
-    buttonDownload.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
-    buttonFix.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
-
-    /*
-    var client = http.createClient(80, cdn);
-
-    downloadFiles(
-        offlineRoot,
-        client,
-        sizes,
-        JSON.parse(JSON.stringify(versionHashes.offline[versionString])),
-        function (sizesNow) {
-            label.innerHTML = getCacheLabelText(sizesNow);
-        },
-        function () {
-            buttonDownload.children[0].setAttribute("class", "fas fa-download");
-            buttonFix.children[0].setAttribute("class", "fas fa-hammer");
-            checkOfflineCache(versionString);
-        }
-    );
-    */
-
-    /*
-    downloadFiles(
-        version.url,
-        offlineRoot,
-        Object.keys(JSON.parse(JSON.stringify(versionHashes.offline[versionString]))),
-        function () {
-            buttonDownload.children[0].setAttribute("class", "fas fa-download");
-            buttonFix.children[0].setAttribute("class", "fas fa-hammer");
-            checkOfflineCache(versionString);
-        }
-    );
-    */
-   ipc.send("download-files", {
-        nginxDir: version.url,
+    // download-files will run hash-check after download
+    ipc.send("download-files", {
+        cdnDir: version.url,
         localDir: offlineRoot,
-        fileRelativePaths: Object.keys(versionHashes.offline[versionString]),
+        hashes: versionHashes.offline[versionString],
+        cacheMode: "offline",
         versionString: versionString,
-   });
+    });
 }
 
 function deleteOfflineCache(versionString) {
     remotefs.removeSync(path.join(offlineRoot, versionString));
     console.log("Offline cache " + versionString + " has been removed!");
 
-    checkOfflineCache(versionString);
-}
-
-function checkPlayableCache(versionString) {
-    var button = document.getElementById(getCacheButtonID(versionString, "playable", "delete"));
-    var label = document.getElementById(getCacheElemID(versionString, "playable", "label"));
-
-    var sizes = versionSizes.playable[versionString];
-
-    resetCacheNames();
-
-    $.each(versionHashes.playable[versionString], function (filePath, fileHash) {
-        var fullFilePath = path.join(cacheRoot, filePath);
-
-        if (remotefs.existsSync(fullFilePath)) {
-            var fileSize = remotefs.statSync(fullFilePath).size;
-
-            if (fileHash === getFileHash(fullFilePath)) {
-                sizes.intact += fileSize;
-            } else {
-                sizes.altered += fileSize;
-            }
-        }
+    // this updates the labels etc. properly
+    ipc.send("hash-check", {
+        localDir: offlineRoot,
+        cacheMode: "offline",
+        versionString: versionString,
+        hashes: versionHashes.offline[versionString],
     });
-
-    if (sizes.intact > 0 || sizes.altered > 0) {
-        button.removeAttribute("disabled");
-    } else {
-        button.setAttribute("disabled", "");
-    }
-
-    label.innerHTML = getCacheLabelText(sizes);
-}
-
-function checkOfflineCache(versionString) {
-    var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
-    var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
-    var buttonDelete = document.getElementById(getCacheButtonID(versionString, "offline", "delete"));
-    var label = document.getElementById(getCacheElemID(versionString, "offline", "label"));
-
-    var sizes = versionSizes.offline[versionString];
-
-    $.each(versionHashes.offline[versionString], function (filePath, fileHash) {
-        var fullFilePath = path.join(offlineRoot, filePath);
-
-        if (remotefs.existsSync(fullFilePath)) {
-            var fileSize = remotefs.statSync(fullFilePath).size;
-
-            if (fileHash === getFileHash(fullFilePath)) {
-                sizes.intact += fileSize;
-            } else {
-                sizes.altered += fileSize;
-            }
-        }
-    });
-
-    if (sizes.intact > 0 || sizes.altered > 0) {
-        buttonDownload.setAttribute("disabled", "");
-        buttonDelete.removeAttribute("disabled");
-    } else {
-        buttonDownload.removeAttribute("disabled");
-        buttonDelete.setAttribute("disabled", "");
-    }
-
-    if (sizes.altered > 0) {
-        buttonFix.removeAttribute("disabled");
-    } else {
-        buttonFix.setAttribute("disabled", "");
-    }
-
-    label.innerHTML = getCacheLabelText(sizes);
 }
 
 function resetCacheNames() {
@@ -876,34 +598,81 @@ $("#of-deleteservermodal").on("show.bs.modal", function (e) {
     $("#deleteserver-servername").html(result.description);
 });
 
-ipc.on("download-update", function (arg) {
-    var sizes = versionSizes.offline[arg.versionString];
-    sizes.intact += arg.size;
+ipc.on("storage-loading-start", function (arg) {
+    var sizes = versionSizes[arg.cacheMode][arg.versionString];
 
-    var label = document.getElementById(getCacheElemID(arg.versionString, "offline", "label"));
+    if (arg.resetIntactSize) {
+        sizes.intact = 0;
+    }
+    sizes.altered = 0;
+
+    var buttonDelete = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "delete"));
+    var buttonDownload = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "download"));
+    var buttonFix = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "fix"));
+    var label = document.getElementById(getCacheElemID(arg.versionString, arg.cacheMode, "label"));
+
+    buttonDelete.setAttribute("disabled", "");
+    buttonDelete.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+
+    if (arg.cacheMode === "offline") {
+        buttonDownload.setAttribute("disabled", "");
+        buttonDownload.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+
+        buttonFix.setAttribute("disabled", "");
+        buttonFix.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+    }
+
     label.innerHTML = getCacheLabelText(sizes);
 });
 
-ipc.on("download-success", function (versionString) {
-    var buttonDownload = document.getElementById(getCacheButtonID(versionString, "offline", "download"));
-    var buttonFix = document.getElementById(getCacheButtonID(versionString, "offline", "fix"));
-
-    buttonDownload.children[0].setAttribute("class", "fas fa-download");
-    buttonFix.children[0].setAttribute("class", "fas fa-hammer");
-    checkOfflineCache(versionString);
-});
-
-ipc.on("hash-update", function (arg) {
+ipc.on("storage-label-update", function (arg) {
     var sizes = versionSizes[arg.cacheMode][arg.versionString];
-
-    if (arg.sizes) {
-        sizes.intact += arg.sizes.intact;
-        sizes.altered += arg.sizes.altered;
-    } else {
-        sizes.intact = 0;
-        sizes.altered = 0;
-    }
+    sizes.intact += arg.sizes.intact;
+    sizes.altered += arg.sizes.altered;
 
     var label = document.getElementById(getCacheElemID(arg.versionString, arg.cacheMode, "label"));
     label.innerHTML = getCacheLabelText(sizes);
+});
+
+ipc.on("download-complete", function (arg) {
+    ipc.send("hash-check", {
+        localDir: (arg.cacheMode === "offline") ? offlineRoot : cacheRoot,
+        cacheMode: arg.cacheMode,
+        versionString: arg.versionString,
+        hashes: versionHashes[arg.cacheMode][arg.versionString],
+    });
+});
+
+ipc.on("hash-check-complete", function (arg) {
+    var sizes = versionSizes[arg.cacheMode][arg.versionString];
+
+    var buttonDelete = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "delete"));
+    var buttonDownload = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "download"));
+    var buttonFix = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "fix"));
+
+    buttonDelete.children[0].setAttribute("class", "fas fa-trash-alt");
+
+    if (arg.cacheMode === "offline") {
+        buttonDownload.children[0].setAttribute("class", "fas fa-download");
+        buttonFix.children[0].setAttribute("class", "fas fa-hammer");
+    }
+
+    if (sizes.intact > 0 || sizes.altered > 0) {
+        buttonDelete.removeAttribute("disabled");
+
+        if (arg.cacheMode === "offline") {
+            buttonDownload.setAttribute("disabled", "");
+
+            if (sizes.altered > 0 || sizes.intact < sizes.total) {
+                buttonFix.removeAttribute("disabled");
+            }
+        }
+    } else {
+        buttonDelete.setAttribute("disabled", "");
+
+        if (arg.cacheMode === "offline") {
+            buttonDownload.removeAttribute("disabled");
+            buttonFix.setAttribute("disabled", "");
+        }
+    }
 });
