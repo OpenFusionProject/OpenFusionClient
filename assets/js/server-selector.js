@@ -166,10 +166,6 @@ function performCacheSwap(newVersion) {
     var currentCache = path.join(cacheRoot, "FusionFall");
     var newCache = path.join(cacheRoot, newVersion);
     var record = path.join(userData, ".lastver");
-    var lastVersion = remotefs.readFileSync(record, (encoding = "utf8"));
-
-    // Make note of what version we are launching for next launch
-    remotefs.writeFileSync(record, newVersion);
 
     // If cache renaming would result in a no-op (ex. launching the same version
     // two times), then skip it. This avoids permissions errors with multiple clients
@@ -179,6 +175,7 @@ function performCacheSwap(newVersion) {
     if (remotefs.existsSync(currentCache)) {
         // Cache already exists, find out what version it belongs to
         if (remotefs.existsSync(record)) {
+            var lastVersion = remotefs.readFileSync(record, (encoding = "utf8"));
             if (lastVersion != newVersion) {
                 // Remove the directory we're trying to store the
                 // existing cache to if it already exists for whatever
@@ -198,6 +195,9 @@ function performCacheSwap(newVersion) {
         }
     }
 
+    // Make note of what version we are launching for next launch
+    remotefs.writeFileSync(record, newVersion);
+    
     if (remotefs.existsSync(newCache) && !skip) {
         // Rename saved cache to FusionFall
         remotefs.renameSync(newCache, currentCache);
