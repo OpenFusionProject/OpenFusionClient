@@ -3,29 +3,18 @@ var remote = require("remote");
 var remotefs = remote.require("fs-extra");
 var dns = remote.require("dns");
 var path = remote.require("path");
-var url = remote.require("url");
-var http = remote.require("http");
-var createHash = remote.require("crypto").createHash;
-var async = remote.require("async");
 
 var userData = remote.require("app").getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
-var hashPath = path.join(userData, "hash.txt");
 var cacheRoot = path.join(
     userData,
     "/../../LocalLow/Unity/Web Player/Cache"
 );
 var offlineRoot = path.join(cacheRoot, "Offline");
 
-var chunkSize = 1 << 16;
-var gb = 1 << 30;
-var cdn = "cdn.dexlabs.systems";
-
 var versionArray;
-var versionHashes;
-var versionSizes;
 var serverArray;
 var config;
 
@@ -186,6 +175,7 @@ function getCacheButtonID(versionString, cacheMode, buttonMode) {
 }
 
 function getCacheLabelText(sizes) {
+    var gb = 1 << 30;
     var labelText = (sizes.intact / gb).toFixed(2) + " / " + (sizes.total / gb).toFixed(2) + " GB";
 
     if (sizes.altered > 0) {
@@ -261,50 +251,23 @@ function getCacheInfoCell(versionString, cacheMode) {
     return cellCache;
 }
 
+function startHashCheck(versionString, cacheMode) {
+    ipc.send("hash-check", {
+        localDir: (cacheMode === "offline") ? offlineRoot : cacheRoot,
+        cacheMode: cacheMode,
+        versionString: versionString,
+    });
+}
+
 function loadCacheList() {
+    resetCacheNames();
+
     var versionjson = remotefs.readJsonSync(versionsPath);
     versionArray = versionjson["versions"];
 
-    versionHashes = { playable: {}, offline: {} };
-    var hashlines = remotefs.readFileSync(hashPath, ( encoding = "utf-8" ));
-    $.each(hashlines.split(/\r\n|\r|\n/), function (key, line) {
-        if (line.length === 0) {
-            return;
-        }
-
-        var linearr = line.split(" ", 2);
-        var fileHash = linearr[0];
-        var filePath = linearr[1].substr(3);
-        var pathArray = filePath.split("/");
-        var hashDict = (pathArray[0] === "Offline") ?
-            versionHashes.offline :
-            versionHashes.playable;
-        var versionString = (pathArray[0] === "Offline") ?
-            pathArray[1] :
-            pathArray[0];
-
-        if (!hashDict.hasOwnProperty(versionString)) {
-            hashDict[versionString] = {};
-        }
-
-        hashDict[versionString][filePath.replace("Offline/", "")] = fileHash;
-    });
-
     $(".cache-listing-entry").remove();
 
-    versionSizes = { playable: {}, offline: {} };
     $.each(versionArray, function (key, value) {
-        versionSizes.playable[value.name] = {
-            intact: 0,
-            altered: 0,
-            total: value.playable_size,
-        };
-        versionSizes.offline[value.name] = {
-            intact: 0,
-            altered: 0,
-            total: value.offline_size,
-        };
-
         var row = document.createElement("tr");
         row.className = "cache-listing-entry"
         row.setAttribute("id", value.name);
@@ -322,39 +285,27 @@ function loadCacheList() {
 
         $("#cache-tablebody").append(row);
 
-        ipc.send("hash-check", {
-            localDir: cacheRoot,
-            cacheMode: "playable",
-            versionString: value.name,
-            hashes: versionHashes.playable[value.name],
-        });
-        ipc.send("hash-check", {
-            localDir: offlineRoot,
-            cacheMode: "offline",
-            versionString: value.name,
-            hashes: versionHashes.offline[value.name],
-        });
+        setTimeout(function () {
+            startHashCheck(value.name, "playable");
+            startHashCheck(value.name, "offline");
+        }, 0);
     })
 }
 
 function deletePlayableCache(versionString) {
-    resetCacheNames();
-
     if (versionString === "Offline") {
         console.log("Cannot delete Offline directory!");
         return;
     }
 
+    // TODO: remove this function
+    resetCacheNames();
+
     remotefs.removeSync(path.join(cacheRoot, versionString));
     console.log("Playable cache " + versionString + " has been removed!");
 
     // this updates the labels etc. properly
-    ipc.send("hash-check", {
-        localDir: cacheRoot,
-        cacheMode: "playable",
-        versionString: versionString,
-        hashes: versionHashes.playable[versionString],
-    });
+    startHashCheck(versionString, "playable");
 }
 
 function downloadOfflineCache(versionString) {
@@ -366,7 +317,6 @@ function downloadOfflineCache(versionString) {
     ipc.send("download-files", {
         cdnDir: version.url,
         localDir: offlineRoot,
-        hashes: versionHashes.offline[versionString],
         cacheMode: "offline",
         versionString: versionString,
     });
@@ -377,12 +327,7 @@ function deleteOfflineCache(versionString) {
     console.log("Offline cache " + versionString + " has been removed!");
 
     // this updates the labels etc. properly
-    ipc.send("hash-check", {
-        localDir: offlineRoot,
-        cacheMode: "offline",
-        versionString: versionString,
-        hashes: versionHashes.offline[versionString],
-    });
+    startHashCheck(versionString, "offline");
 }
 
 function resetCacheNames() {
@@ -599,13 +544,6 @@ $("#of-deleteservermodal").on("show.bs.modal", function (e) {
 });
 
 ipc.on("storage-loading-start", function (arg) {
-    var sizes = versionSizes[arg.cacheMode][arg.versionString];
-
-    if (arg.resetIntactSize) {
-        sizes.intact = 0;
-    }
-    sizes.altered = 0;
-
     var buttonDelete = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "delete"));
     var buttonDownload = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "download"));
     var buttonFix = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "fix"));
@@ -622,30 +560,15 @@ ipc.on("storage-loading-start", function (arg) {
         buttonFix.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
     }
 
-    label.innerHTML = getCacheLabelText(sizes);
+    label.innerHTML = getCacheLabelText(arg.sizes);
 });
 
 ipc.on("storage-label-update", function (arg) {
-    var sizes = versionSizes[arg.cacheMode][arg.versionString];
-    sizes.intact += arg.sizes.intact;
-    sizes.altered += arg.sizes.altered;
-
     var label = document.getElementById(getCacheElemID(arg.versionString, arg.cacheMode, "label"));
-    label.innerHTML = getCacheLabelText(sizes);
+    label.innerHTML = getCacheLabelText(arg.sizes);
 });
 
-ipc.on("download-complete", function (arg) {
-    ipc.send("hash-check", {
-        localDir: (arg.cacheMode === "offline") ? offlineRoot : cacheRoot,
-        cacheMode: arg.cacheMode,
-        versionString: arg.versionString,
-        hashes: versionHashes[arg.cacheMode][arg.versionString],
-    });
-});
-
-ipc.on("hash-check-complete", function (arg) {
-    var sizes = versionSizes[arg.cacheMode][arg.versionString];
-
+ipc.on("storage-loading-complete", function (arg) {
     var buttonDelete = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "delete"));
     var buttonDownload = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "download"));
     var buttonFix = document.getElementById(getCacheButtonID(arg.versionString, arg.cacheMode, "fix"));
@@ -657,13 +580,13 @@ ipc.on("hash-check-complete", function (arg) {
         buttonFix.children[0].setAttribute("class", "fas fa-hammer");
     }
 
-    if (sizes.intact > 0 || sizes.altered > 0) {
+    if (arg.sizes.intact > 0 || arg.sizes.altered > 0) {
         buttonDelete.removeAttribute("disabled");
 
         if (arg.cacheMode === "offline") {
             buttonDownload.setAttribute("disabled", "");
 
-            if (sizes.altered > 0 || sizes.intact < sizes.total) {
+            if (arg.sizes.altered > 0 || arg.sizes.intact < arg.sizes.total) {
                 buttonFix.removeAttribute("disabled");
             }
         }

@@ -33,7 +33,10 @@ var userData = app.getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
-var hashPath = path.join(userData, "hash.txt");
+var hashPath = path.join(userData, "hashes.json");
+
+var versionHashes;
+var versionSizes;
 
 function initialSetup(firstTime) {
     if (!firstTime) {
@@ -55,7 +58,7 @@ function initialSetup(firstTime) {
     // Copy default versions and config
     fs.copySync(path.join(__dirname, "/defaults/versions.json"), versionsPath);
     fs.copySync(path.join(__dirname, "/defaults/config.json"), configPath);
-    fs.copySync(path.join(__dirname, "/defaults/hash.txt"), hashPath);
+    fs.copySync(path.join(__dirname, "/defaults/hashes.json"), hashPath);
 
     console.log("JSON files copied.");
     showMainWindow();
@@ -71,6 +74,26 @@ app.on("window-all-closed", function () {
 });
 
 app.on("ready", function () {
+    versionHashes = fs.readJsonSync(hashPath);
+
+    versionSizes = {}
+    Object.keys(versionHashes).forEach(function (versionString) {
+        var value = versionHashes[versionString];
+
+        versionSizes[versionString] = {
+            playable: {
+                intact: 0,
+                altered: 0,
+                total: value.playable_size,
+            },
+            offline: {
+                intact: 0,
+                altered: 0,
+                total: value.offline_size,
+            },
+        };
+    });
+
     // Check just in case the user forgot to extract the zip.
     zipCheck = app.getPath("exe").includes(os.tmpdir());
     if (zipCheck) {
@@ -125,27 +148,35 @@ app.on("ready", function () {
     });
 
     ipc.on("download-files", function (event, arg) {
+        var currentSizes = versionSizes[arg.versionString][arg.cacheMode];
+        currentSizes.intact = 0;
+        currentSizes.altered = 0;
+
         mainWindow.webContents.send("storage-loading-start", {
             cacheMode: arg.cacheMode,
             versionString: arg.versionString,
-            resetIntactSize: false,
+            sizes: currentSizes,
         });
 
         downloadFiles(
             arg.cdnDir,
-            arg.localDir,
-            arg.hashes,
+            path.join(arg.localDir, arg.versionString),
+            versionHashes[arg.versionString][arg.cacheMode],
             function (sizes) {
+                currentSizes.intact += sizes.intact;
+                currentSizes.altered += sizes.altered;
+
                 mainWindow.webContents.send("storage-label-update", {
                     cacheMode: arg.cacheMode,
                     versionString: arg.versionString,
-                    sizes: sizes,
+                    sizes: currentSizes,
                 });
             },
             function () {
-                mainWindow.webContents.send("download-complete", {
+                mainWindow.webContents.send("storage-loading-complete", {
                     cacheMode: arg.cacheMode,
                     versionString: arg.versionString,
+                    sizes: currentSizes,
                 });
             },
             function (err) {
@@ -155,26 +186,34 @@ app.on("ready", function () {
     });
 
     ipc.on("hash-check", function (event, arg) {
+        var currentSizes = versionSizes[arg.versionString][arg.cacheMode];
+        currentSizes.intact = 0;
+        currentSizes.altered = 0;
+
         mainWindow.webContents.send("storage-loading-start", {
             cacheMode: arg.cacheMode,
             versionString: arg.versionString,
-            resetIntactSize: true,
+            sizes: currentSizes,
         });
 
         checkHashes(
-            arg.localDir,
-            arg.hashes,
+            path.join(arg.localDir, arg.versionString),
+            versionHashes[arg.versionString][arg.cacheMode],
             function (sizes) {
+                currentSizes.intact += sizes.intact;
+                currentSizes.altered += sizes.altered;
+
                 mainWindow.webContents.send("storage-label-update", {
                     cacheMode: arg.cacheMode,
                     versionString: arg.versionString,
-                    sizes: sizes,
+                    sizes: currentSizes,
                 });
             },
             function () {
-                mainWindow.webContents.send("hash-check-complete", {
+                mainWindow.webContents.send("storage-loading-complete", {
                     cacheMode: arg.cacheMode,
                     versionString: arg.versionString,
+                    sizes: currentSizes,
                 });
             },
             function (err) {
@@ -234,18 +273,12 @@ function showMainWindow() {
 }
 
 function downloadFile(cdnDir, localDir, relativePath, fileHash, callback, updateCallback) {
-    var nginxUrl = path.dirname(cdnDir) + "/" + relativePath;
+    var nginxUrl = cdnDir + "/" + relativePath;
     var localPath = path.join(localDir, relativePath);
-
-    // Create directories if they don't exist
     var dirName = path.dirname(localPath);
-    fs.ensureDir(dirName, function (createDirErr) {
-        if (createDirErr) {
-            console.log("Could not create path " + dirName + ": " + createDirErr);
-            callback(createDirErr);
-            return;
-        }
 
+    // define the download function
+    var downloader = function () {
         // HTTP request to download the file
         var fileStream = fs.createWriteStream(localPath);
 
@@ -272,6 +305,8 @@ function downloadFile(cdnDir, localDir, relativePath, fileHash, callback, update
             // When the download is complete, invoke the callback
             response.on("end", function() {
                 fileStream.end();
+                fileStream.destroy();
+                // Don't fail on altered download results, just report on it
                 checkHash(localDir, relativePath, fileHash, callback, updateCallback);
             });
 
@@ -283,6 +318,40 @@ function downloadFile(cdnDir, localDir, relativePath, fileHash, callback, update
         request.on("error", callback);
 
         request.end();
+    };
+
+    // Create directories if they don't exist
+    fs.ensureDir(dirName, function (createDirErr) {
+        if (createDirErr) {
+            console.log("Could not create path " + dirName + ": " + createDirErr);
+            callback(createDirErr);
+            return;
+        }
+
+        // start with the initial file check, call downloader if necessary
+        checkHash(
+            localDir,
+            relativePath,
+            fileHash,
+            function (err) {
+                if (err) {
+                    if (err.code === "ENOENT") {
+                        downloader();
+                    } else {
+                        callback(err);
+                    }
+                }
+                // allow the happy-path to continue
+            },
+            function (sizes) {
+                if (sizes.intact === 0) {
+                    downloader();
+                } else {
+                    updateCallback(sizes);
+                    callback();
+                }
+            }
+        );
     });
 }
 
@@ -296,7 +365,7 @@ function downloadFiles(cdnDir, localDir, hashes, updateCallback, allDoneCallback
         },
         function (err) {
             if (err) {
-                console.error("Download failed: " + err);
+                console.log("Download failed: " + err);
                 errorCallback(err);
             } else {
                 console.log("All files downloaded successfully.");
@@ -306,56 +375,33 @@ function downloadFiles(cdnDir, localDir, hashes, updateCallback, allDoneCallback
     );
 }
 
-function checkHash(localDir, relativePath, fileHash, callback, updateCallback) {
+function checkHash(localDir, relativePath, fileHash, callback, updateCallback, skipMissing) {
     var localPath = path.join(localDir, relativePath);
 
     var chunkSize = 1 << 16;
     var totalCount = 0;
-    var buff = new Buffer(chunkSize);
     var hash = createHash("sha256");
 
-    fs.open(localPath, "r", function (openErr, file) {
-        if (openErr) {
-            if (openErr.code === "ENOENT") {
-                callback();
-            } else {
-                console.log("Error opening file for hash check: " + openErr);
-                callback(openErr);
-            }
-            return;
-        }
+    var fileStream = fs.createReadStream(localPath, { bufferSize: chunkSize });
 
-        var updater;
-        var reader = function () {
-            fs.read(file, buff, 0, chunkSize, null, updater);
-        };
-        updater = function (readErr, readSize) {
-            if (readErr) {
-                console.log("Error reading file for hash check: " + readErr);
-                callback(readErr);
-            } else if (readSize > 0) {
-                hash.update(buff.slice(0, readSize));
-                totalCount += readSize;
+    fileStream.on("error", function (err) {
+        callback((skipMissing && err.code === "ENOENT") ? null : err);
+    });
 
-                reader();
-            } else {
-                var state = (fileHash === hash.digest(encoding="hex")) ? "intact" : "altered";
-                var sizes = { intact: 0, altered: 0 };
-                sizes[state] = totalCount;
+    fileStream.on("data", function (data) {
+        hash.update(data);
+        totalCount += data.length;
+    });
 
-                fs.close(file, function (fileCloseErr) {
-                    if (fileCloseErr) {
-                        console.log("Error closing file for hash check: " + fileCloseErr);
-                        callback(fileCloseErr);
-                    } else {
-                        updateCallback(sizes);
-                        callback();
-                    }
-                });
-            }
-        };
+    fileStream.on("end", function () {
+        fileStream.destroy();
 
-        reader();
+        var sizes = { intact: 0, altered: 0 };
+        var state = (fileHash !== hash.digest(encoding="hex")) ? "altered" : "intact";
+        sizes[state] = totalCount;
+
+        updateCallback(sizes);
+        callback();
     });
 }
 
@@ -364,7 +410,7 @@ function checkHashes(localDir, hashes, updateCallback, allDoneCallback, errorCal
         Object.keys(hashes),
         20,
         function (relativePath, callback) {
-            checkHash(localDir, relativePath, hashes[relativePath], callback, updateCallback);
+            checkHash(localDir, relativePath, hashes[relativePath], callback, updateCallback, (skipMissing = true));
         },
         function (err) {
             if (err) {
