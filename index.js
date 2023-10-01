@@ -160,7 +160,7 @@ app.on("ready", function () {
 
         downloadFiles(
             arg.cdnDir,
-            path.join(arg.localDir, arg.versionString),
+            getSwappedPathSync(arg.localDir, arg.versionString),  // this shouldn't matter, for consistency only
             versionHashes[arg.versionString][arg.cacheMode],
             function (sizes) {
                 currentSizes.intact += sizes.intact;
@@ -185,6 +185,34 @@ app.on("ready", function () {
         );
     });
 
+    ipc.on("delete-files", function (event, arg) {
+        var deleteDir = getSwappedPathSync(arg.localDir, arg.versionString);
+
+        if (arg.cacheMode === "playable" && path.basename(deleteDir) === "Offline") {
+            dialog.showErrorBox("Error!", "Cannot delete Offline directory as a playable cache!");
+            return;
+        }
+
+        var currentSizes = versionSizes[arg.versionString][arg.cacheMode];
+        currentSizes.intact = 0;
+        currentSizes.altered = 0;
+
+        mainWindow.webContents.send("storage-loading-start", {
+            cacheMode: arg.cacheMode,
+            versionString: arg.versionString,
+            sizes: currentSizes,
+        });
+
+        fs.removeSync(deleteDir);
+        console.log(arg.versionString + " (" + arg.cacheMode + ") has been removed!");
+
+        mainWindow.webContents.send("storage-loading-complete", {
+            cacheMode: arg.cacheMode,
+            versionString: arg.versionString,
+            sizes: currentSizes,
+        });
+    });
+
     ipc.on("hash-check", function (event, arg) {
         var currentSizes = versionSizes[arg.versionString][arg.cacheMode];
         currentSizes.intact = 0;
@@ -197,7 +225,7 @@ app.on("ready", function () {
         });
 
         checkHashes(
-            path.join(arg.localDir, arg.versionString),
+            getSwappedPathSync(arg.localDir, arg.versionString),
             versionHashes[arg.versionString][arg.cacheMode],
             function (sizes) {
                 currentSizes.intact += sizes.intact;
@@ -270,6 +298,22 @@ function showMainWindow() {
                 mainWindow.loadUrl(url);
         }
     });
+}
+
+function getSwappedPathSync(localDir, versionString) {
+    var currentCache = path.join(localDir, "FusionFall");
+    var versionCache = path.join(localDir, versionString);
+    var record = path.join(userData, ".lastver");
+
+    if (!fs.existsSync(versionCache) &&
+        fs.existsSync(currentCache) &&
+        fs.existsSync(record) &&
+        versionString === fs.readFileSync(record, (encoding = "utf8"))) {
+
+        versionCache = currentCache;
+    }
+
+    return versionCache;
 }
 
 function downloadFile(cdnDir, localDir, relativePath, fileHash, callback, updateCallback) {
