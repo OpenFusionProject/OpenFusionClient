@@ -260,8 +260,6 @@ function startHashCheck(versionString, cacheMode) {
 }
 
 function loadCacheList() {
-    resetCacheNames();
-
     var versionjson = remotefs.readJsonSync(versionsPath);
     versionArray = versionjson["versions"];
 
@@ -293,19 +291,11 @@ function loadCacheList() {
 }
 
 function deletePlayableCache(versionString) {
-    if (versionString === "Offline") {
-        console.log("Cannot delete Offline directory!");
-        return;
-    }
-
-    // TODO: remove this function
-    resetCacheNames();
-
-    remotefs.removeSync(path.join(cacheRoot, versionString));
-    console.log("Playable cache " + versionString + " has been removed!");
-
-    // this updates the labels etc. properly
-    startHashCheck(versionString, "playable");
+    ipc.send("delete-files", {
+        localDir: cacheRoot,
+        cacheMode: "playable",
+        versionString: versionString,
+    });
 }
 
 function downloadOfflineCache(versionString) {
@@ -323,27 +313,11 @@ function downloadOfflineCache(versionString) {
 }
 
 function deleteOfflineCache(versionString) {
-    remotefs.removeSync(path.join(offlineRoot, versionString));
-    console.log("Offline cache " + versionString + " has been removed!");
-
-    // this updates the labels etc. properly
-    startHashCheck(versionString, "offline");
-}
-
-function resetCacheNames() {
-    var currentCache = path.join(cacheRoot, "Fusionfall");
-    var record = path.join(userData, ".lastver");
-
-    if (!remotefs.existsSync(currentCache)) {
-        return;
-    }
-
-    var lastVersion = remotefs.readFileSync(record, (encoding = "utf8"));
-    remotefs.renameSync(
-        currentCache,
-        path.join(cacheRoot, lastVersion)
-    );
-    console.log("Current cache " + lastVersion + " has been renamed to its original name.");
+    ipc.send("delete-files", {
+        localDir: offlineRoot,
+        cacheMode: "offline",
+        versionString: versionString,
+    });
 }
 
 function performCacheSwap(newVersion) {
@@ -381,7 +355,7 @@ function performCacheSwap(newVersion) {
 
     // Make note of what version we are launching for next launch
     remotefs.writeFileSync(record, newVersion);
-    
+
     if (remotefs.existsSync(newCache) && !skip) {
         // Rename saved cache to FusionFall
         remotefs.renameSync(newCache, currentCache);
