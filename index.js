@@ -8,6 +8,7 @@ var url = require("url");
 var http = require("http");
 var async = require("async");
 var createHash = require("crypto").createHash;
+var spawn = require("child_process").spawn;
 
 var BrowserWindow = require("browser-window");
 var mainWindow = null;
@@ -323,45 +324,17 @@ function downloadFile(cdnDir, localDir, relativePath, fileHash, callback, update
 
     // define the download function
     var downloader = function () {
-        // HTTP request to download the file
-        var fileStream = fs.createWriteStream(localPath);
+        var child = spawn("lib/wget.exe", ["-q", "-P", dirName, nginxUrl]);
 
-        var urlParse = url.parse(nginxUrl);
-        var client = http.createClient(80, urlParse.hostname);
-        var options = {
-            method: "GET",
-            url: urlParse.hostname,
-            port: 80,
-            path: urlParse.path,
-            headers: {
-                "Host": urlParse.hostname,
-                "Content-Type": "application/octet-stream",
-                "Referer": cdnDir,
-                "Connection": "keep-alive",
-            }
-        };
-
-        var request = client.request("GET", urlParse.path, options);
-
-        request.on("response", function (response) {
-            response.pipe(fileStream);
-
-            // When the download is complete, invoke the callback
-            response.on("end", function() {
-                fileStream.end();
-                fileStream.destroy();
-                // Don't fail on altered download results, just report on it
+        child.on("exit", function (code, signal) {
+            if (code === 0 && !signal) {
                 checkHash(localDir, relativePath, fileHash, callback, updateCallback);
-            });
-
-            // Handle errors
-            response.on("error", callback);
+            } else {
+                callback(new Error("Download process exited with code " + code + " and signal " + signal));
+            }
         });
 
-        // Handle HTTP errors
-        request.on("error", callback);
-
-        request.end();
+        child.on("error", callback);
     };
 
     // Create directories if they don't exist
@@ -438,8 +411,6 @@ function checkHash(localDir, relativePath, fileHash, callback, updateCallback, s
     });
 
     fileStream.on("end", function () {
-        fileStream.destroy();
-
         var sizes = { intact: 0, altered: 0 };
         var state = (fileHash !== hash.digest(encoding="hex")) ? "altered" : "intact";
         sizes[state] = totalCount;

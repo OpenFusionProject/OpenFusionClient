@@ -179,7 +179,7 @@ function getCacheLabelText(sizes) {
     var labelText = (sizes.intact / gb).toFixed(2) + " / " + (sizes.total / gb).toFixed(2) + " GB";
 
     if (sizes.altered > 0) {
-        labelText += "\n(" + (sizes.altered / gb).toFixed(2) + " GB Altered)";
+        labelText += "<br/>(" + (sizes.altered / gb).toFixed(2) + " GB Altered)";
     }
 
     return labelText;
