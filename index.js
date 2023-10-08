@@ -4,8 +4,6 @@ var fs = require("fs-extra");
 var ipc = require("ipc");
 var os = require("os");
 var path = require("path");
-var url = require("url");
-var http = require("http");
 var async = require("async");
 var createHash = require("crypto").createHash;
 var spawn = require("child_process").spawn;
@@ -21,7 +19,6 @@ if (process.env.npm_node_execpath) {
 
 process.env["UNITY_HOME_DIR"] = unityHomeDir;
 process.env["UNITY_DISABLE_PLUGIN_UPDATES"] = "yes";
-process.env["WINE_LARGE_ADDRESS_AWARE"] = "1";
 
 app.commandLine.appendSwitch("enable-npapi");
 app.commandLine.appendSwitch(
@@ -111,7 +108,6 @@ app.on("ready", function () {
         show: false,
         "web-preferences": {
             plugins: true,
-            nodeIntegration: true,
         },
     });
     mainWindow.setMinimumSize(640, 480);
@@ -249,6 +245,21 @@ app.on("ready", function () {
                 dialog.showErrorBox("Error!", "Could not verify file integrity:\n" + err);
             }
         );
+    });
+
+    ipc.on("adjust-game-info", function (event, arg) {
+        var serverInfo = JSON.parse(arg.serverInfo);
+        var versionInfo = JSON.parse(arg.versionInfo);
+        var currentSizes = versionSizes[versionInfo.name]["offline"];
+        var localURL = "file:///" + path.join(arg.localDir, versionInfo.name).replace(/\\/g, "/") + "/";
+
+        mainWindow.webContents.send("set-game-info", {
+            serverInfo: JSON.stringify(serverInfo),
+            versionInfo: JSON.stringify({
+                name: versionInfo.name,
+                url: (currentSizes.intact === currentSizes.total) ? localURL : versionInfo.url,
+            }),
+        });
     });
 });
 
