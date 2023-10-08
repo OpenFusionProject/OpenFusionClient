@@ -363,19 +363,18 @@ function performCacheSwap(newVersion) {
     }
 }
 
-// For writing loginInfo.php, assetInfo.php, etc.
-function setGameInfo(serverUUID) {
-    var result = serverArray.filter(function (obj) {
+function prepGameInfo(serverUUID) {
+    var serverInfo = serverArray.filter(function (obj) {
         return obj.uuid === serverUUID;
     })[0];
-    var gameVersion = versionArray.filter(function (obj) {
-        return obj.name === result.version;
+    var versionInfo = versionArray.filter(function (obj) {
+        return obj.name === serverInfo.version;
     })[0];
 
     // If cache swapping property exists AND is `true`, run cache swapping logic
     if (config["cache-swapping"]) {
         try {
-            performCacheSwap(gameVersion.name);
+            performCacheSwap(versionInfo.name);
         } catch (ex) {
             console.log(
                 "Error when swapping cache, it may get overwritten:\n" + ex
@@ -383,11 +382,20 @@ function setGameInfo(serverUUID) {
         }
     }
 
-    window.assetUrl = gameVersion.url; // game-client.js needs to access this
+    ipc.send("adjust-game-info", {
+        localDir: offlineRoot,
+        serverInfo: JSON.stringify(serverInfo),
+        versionInfo: JSON.stringify(versionInfo),
+    });
+}
+
+// For writing loginInfo.php, assetInfo.php, etc.
+function setGameInfo(serverInfo, versionInfo) {
+    window.assetUrl = versionInfo.url; // game-client.js needs to access this
 
     remotefs.writeFileSync(path.join(__dirname, "assetInfo.php"), assetUrl);
-    if (result.hasOwnProperty("endpoint")) {
-        var httpEndpoint = result.endpoint.replace("https://", "http://");
+    if (serverInfo.hasOwnProperty("endpoint")) {
+        var httpEndpoint = serverInfo.endpoint.replace("https://", "http://");
         remotefs.writeFileSync(
             path.join(__dirname, "rankurl.txt"),
             httpEndpoint + "getranks"
@@ -419,17 +427,17 @@ function setGameInfo(serverUUID) {
     // Server address parsing
     var address;
     var port;
-    var sepPos = result.ip.indexOf(":");
+    var sepPos = serverInfo.ip.indexOf(":");
     if (sepPos > -1) {
-        address = result.ip.substr(0, sepPos);
-        port = result.ip.substr(sepPos + 1);
+        address = serverInfo.ip.substr(0, sepPos);
+        port = serverInfo.ip.substr(sepPos + 1);
     } else {
-        address = result.ip;
+        address = serverInfo.ip;
         port = 23000; // default
     }
 
     // DNS resolution. there is no synchronous version for some stupid reason
-    if (!address.match(/^[0-9.]+$/))
+    if (!address.match(/^[0-9.]+$/)) {
         dns.lookup(address, (family = 4), function (err, resolvedAddress) {
             if (!err) {
                 console.log("Resolved " + address + " to " + resolvedAddress);
@@ -439,7 +447,7 @@ function setGameInfo(serverUUID) {
             }
             prepConnection(address, port);
         });
-    else {
+    } else {
         console.log(address + " is an IP; skipping DNS lookup");
         prepConnection(address, port);
     }
@@ -468,7 +476,7 @@ function connectToServer() {
     $("#of-serverselector").fadeOut("slow", function () {
         setTimeout(function () {
             $("body,html").css("pointer-events", "");
-            setGameInfo(getSelectedServer());
+            prepGameInfo(getSelectedServer());
         }, 200);
     });
 }
@@ -572,4 +580,8 @@ ipc.on("storage-loading-complete", function (arg) {
             buttonFix.setAttribute("disabled", "");
         }
     }
+});
+
+ipc.on("set-game-info", function (arg) {
+    setGameInfo(JSON.parse(arg.serverInfo), JSON.parse(arg.versionInfo));
 });
