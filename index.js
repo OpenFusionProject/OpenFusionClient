@@ -4,9 +4,6 @@ var fs = require("fs-extra");
 var ipc = require("ipc");
 var os = require("os");
 var path = require("path");
-var async = require("async");
-var createHash = require("crypto").createHash;
-var spawn = require("child_process").spawn;
 
 var BrowserWindow = require("browser-window");
 var mainWindow = null;
@@ -32,9 +29,6 @@ var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
 var hashPath = path.join(userData, "hashes.json");
-
-var versionHashes;
-var versionSizes;
 
 function initialSetup(firstTime) {
     if (!firstTime) {
@@ -72,26 +66,6 @@ app.on("window-all-closed", function () {
 });
 
 app.on("ready", function () {
-    versionHashes = fs.readJsonSync(hashPath);
-
-    versionSizes = {}
-    Object.keys(versionHashes).forEach(function (versionString) {
-        var value = versionHashes[versionString];
-
-        versionSizes[versionString] = {
-            playable: {
-                intact: 0,
-                altered: 0,
-                total: value.playable_size,
-            },
-            offline: {
-                intact: 0,
-                altered: 0,
-                total: value.offline_size,
-            },
-        };
-    });
-
     // Check just in case the user forgot to extract the zip.
     zipCheck = app.getPath("exe").includes(os.tmpdir());
     if (zipCheck) {
@@ -143,124 +117,6 @@ app.on("ready", function () {
     mainWindow.on("closed", function () {
         mainWindow = null;
     });
-
-    ipc.on("download-files", function (event, arg) {
-        var currentSizes = versionSizes[arg.versionString][arg.cacheMode];
-        currentSizes.intact = 0;
-        currentSizes.altered = 0;
-
-        mainWindow.webContents.send("storage-loading-start", {
-            cacheMode: arg.cacheMode,
-            versionString: arg.versionString,
-            sizes: currentSizes,
-        });
-
-        downloadFiles(
-            arg.cdnDir,
-            getSwappedPathSync(arg.localDir, arg.versionString),  // this shouldn't matter, for consistency only
-            versionHashes[arg.versionString][arg.cacheMode],
-            function (sizes) {
-                currentSizes.intact += sizes.intact;
-                currentSizes.altered += sizes.altered;
-
-                mainWindow.webContents.send("storage-label-update", {
-                    cacheMode: arg.cacheMode,
-                    versionString: arg.versionString,
-                    sizes: currentSizes,
-                });
-            },
-            function () {
-                mainWindow.webContents.send("storage-loading-complete", {
-                    cacheMode: arg.cacheMode,
-                    versionString: arg.versionString,
-                    sizes: currentSizes,
-                });
-            },
-            function (err) {
-                dialog.showErrorBox("Error!", "Download was unsuccessful:\n" + err);
-            }
-        );
-    });
-
-    ipc.on("delete-files", function (event, arg) {
-        var deleteDir = getSwappedPathSync(arg.localDir, arg.versionString);
-
-        if (arg.cacheMode === "playable" && path.basename(deleteDir) === "Offline") {
-            dialog.showErrorBox("Error!", "Cannot delete Offline directory as a playable cache!");
-            return;
-        }
-
-        var currentSizes = versionSizes[arg.versionString][arg.cacheMode];
-        currentSizes.intact = 0;
-        currentSizes.altered = 0;
-
-        mainWindow.webContents.send("storage-loading-start", {
-            cacheMode: arg.cacheMode,
-            versionString: arg.versionString,
-            sizes: currentSizes,
-        });
-
-        fs.removeSync(deleteDir);
-        console.log(arg.versionString + " (" + arg.cacheMode + ") has been removed!");
-
-        mainWindow.webContents.send("storage-loading-complete", {
-            cacheMode: arg.cacheMode,
-            versionString: arg.versionString,
-            sizes: currentSizes,
-        });
-    });
-
-    ipc.on("hash-check", function (event, arg) {
-        var currentSizes = versionSizes[arg.versionString][arg.cacheMode];
-        currentSizes.intact = 0;
-        currentSizes.altered = 0;
-
-        mainWindow.webContents.send("storage-loading-start", {
-            cacheMode: arg.cacheMode,
-            versionString: arg.versionString,
-            sizes: currentSizes,
-        });
-
-        checkHashes(
-            getSwappedPathSync(arg.localDir, arg.versionString),
-            versionHashes[arg.versionString][arg.cacheMode],
-            function (sizes) {
-                currentSizes.intact += sizes.intact;
-                currentSizes.altered += sizes.altered;
-
-                mainWindow.webContents.send("storage-label-update", {
-                    cacheMode: arg.cacheMode,
-                    versionString: arg.versionString,
-                    sizes: currentSizes,
-                });
-            },
-            function () {
-                mainWindow.webContents.send("storage-loading-complete", {
-                    cacheMode: arg.cacheMode,
-                    versionString: arg.versionString,
-                    sizes: currentSizes,
-                });
-            },
-            function (err) {
-                dialog.showErrorBox("Error!", "Could not verify file integrity:\n" + err);
-            }
-        );
-    });
-
-    ipc.on("adjust-game-info", function (event, arg) {
-        var serverInfo = JSON.parse(arg.serverInfo);
-        var versionInfo = JSON.parse(arg.versionInfo);
-        var currentSizes = versionSizes[versionInfo.name]["offline"];
-        var localURL = "file:///" + path.join(arg.localDir, versionInfo.name).replace(/\\/g, "/") + "/";
-
-        mainWindow.webContents.send("set-game-info", {
-            serverInfo: JSON.stringify(serverInfo),
-            versionInfo: JSON.stringify({
-                name: versionInfo.name,
-                url: (currentSizes.intact === currentSizes.total) ? localURL : versionInfo.url,
-            }),
-        });
-    });
 });
 
 function showMainWindow() {
@@ -310,141 +166,4 @@ function showMainWindow() {
                 mainWindow.loadUrl(url);
         }
     });
-}
-
-function getSwappedPathSync(localDir, versionString) {
-    var currentCache = path.join(localDir, "FusionFall");
-    var versionCache = path.join(localDir, versionString);
-    var record = path.join(userData, ".lastver");
-
-    if (!fs.existsSync(versionCache) &&
-        fs.existsSync(currentCache) &&
-        fs.existsSync(record) &&
-        versionString === fs.readFileSync(record, (encoding = "utf8"))) {
-
-        versionCache = currentCache;
-    }
-
-    return versionCache;
-}
-
-function downloadFile(cdnDir, localDir, relativePath, fileHash, callback, updateCallback) {
-    var nginxUrl = cdnDir + "/" + relativePath;
-    var localPath = path.join(localDir, relativePath);
-    var dirName = path.dirname(localPath);
-
-    // define the download function
-    var downloader = function () {
-        var child = spawn("lib/wget.exe", ["-q", "-P", dirName, nginxUrl]);
-
-        child.on("exit", function (code, signal) {
-            if (code === 0 && !signal) {
-                checkHash(localDir, relativePath, fileHash, callback, updateCallback);
-            } else {
-                callback(new Error("Download process exited with code " + code + " and signal " + signal));
-            }
-        });
-
-        child.on("error", callback);
-    };
-
-    // Create directories if they don't exist
-    fs.ensureDir(dirName, function (createDirErr) {
-        if (createDirErr) {
-            console.log("Could not create path " + dirName + ": " + createDirErr);
-            callback(createDirErr);
-            return;
-        }
-
-        // start with the initial file check, call downloader if necessary
-        checkHash(
-            localDir,
-            relativePath,
-            fileHash,
-            function (err) {
-                if (err) {
-                    if (err.code === "ENOENT") {
-                        downloader();
-                    } else {
-                        callback(err);
-                    }
-                }
-                // allow the happy-path to continue
-            },
-            function (sizes) {
-                if (sizes.intact === 0) {
-                    downloader();
-                } else {
-                    updateCallback(sizes);
-                    callback();
-                }
-            }
-        );
-    });
-}
-
-  // Function to download multiple files in parallel
-function downloadFiles(cdnDir, localDir, hashes, updateCallback, allDoneCallback, errorCallback) {
-    async.eachLimit(
-        Object.keys(hashes),
-        5, // Number of parallel downloads
-        function (relativePath, callback) {
-            downloadFile(cdnDir, localDir, relativePath, hashes[relativePath], callback, updateCallback);
-        },
-        function (err) {
-            if (err) {
-                console.log("Download failed: " + err);
-                errorCallback(err);
-            } else {
-                console.log("All files downloaded successfully.");
-                allDoneCallback();
-            }
-        }
-    );
-}
-
-function checkHash(localDir, relativePath, fileHash, callback, updateCallback, skipMissing) {
-    var localPath = path.join(localDir, relativePath);
-
-    var chunkSize = 1 << 16;
-    var totalCount = 0;
-    var hash = createHash("sha256");
-
-    var fileStream = fs.createReadStream(localPath, { bufferSize: chunkSize });
-
-    fileStream.on("error", function (err) {
-        callback((skipMissing && err.code === "ENOENT") ? null : err);
-    });
-
-    fileStream.on("data", function (data) {
-        hash.update(data);
-        totalCount += data.length;
-    });
-
-    fileStream.on("end", function () {
-        var sizes = { intact: 0, altered: 0 };
-        var state = (fileHash !== hash.digest(encoding="hex")) ? "altered" : "intact";
-        sizes[state] = totalCount;
-
-        updateCallback(sizes);
-        callback();
-    });
-}
-
-function checkHashes(localDir, hashes, updateCallback, allDoneCallback, errorCallback) {
-    async.eachLimit(
-        Object.keys(hashes),
-        20,
-        function (relativePath, callback) {
-            checkHash(localDir, relativePath, hashes[relativePath], callback, updateCallback, (skipMissing = true));
-        },
-        function (err) {
-            if (err) {
-                console.log("Hash check failed: " + err);
-                errorCallback(err);
-            } else {
-                allDoneCallback();
-            }
-        }
-    );
 }
