@@ -3,6 +3,7 @@ var remotefs = remote.require("fs-extra");
 var dns = remote.require("dns");
 var path = remote.require("path");
 var dialog = remote.require("dialog");
+var net = remote.require("net");
 var spawn = require("child_process").spawn;
 
 var userData = remote.require("app").getPath("userData");
@@ -340,38 +341,47 @@ function handleCache(mode, versionString, cacheMode, callback) {
         "http://cdn.dexlabs.systems/ff/big" :
         path.dirname(versions[0].url);
 
-    var executable = path.join(__dirname, "lib", "cache_handler.exe");
-    var args = [
-        "--mode", (mode === "fix") ? "download" : mode,
-        "--hash-file", hashPath,
-        "--playable-root", cacheRoot,
-        "--offline-root", offlineRoot,
-        "--user-dir", userData,
-        "--cdn-root", cdnRoot,
-        "--cache-mode", (cacheMode) ? cacheMode : "all",
-        "--cache-version", (versionString) ? versionString : "all"
-    ];
+    var lastSizes = {};
 
     storageLoadingStart(versionString, cacheMode);
 
-    var child = spawn(executable, args, { stdio: [null, null, null, "ipc"] });
+    var server = net.createServer(function (sock) {
+        sock.setEncoding("utf8");
 
-    var lastSizes = {};
-    child.on("message", function (sizes) {
-        lastSizes = sizes;
-        storageLoadingUpdate(lastSizes);
+        sock.on("data", function (data) {
+            data.split("\n").forEach(function (sizeString) {
+                if (sizeString === "") return;
+
+                lastSizes = JSON.parse(sizeString);
+                storageLoadingUpdate(lastSizes);
+            });
+        });
     });
 
-    child.on("exit", function (code, signal) {
-        if (code !== 0 || signal) {
-            dialog.showErrorBox(
-                "Sorry!",
-                "Process \"" + mode + "\" failed with code " + code + " and signal " + signal + "."
-            );
-        }
-        storageLoadingComplete(lastSizes);
-        if (callback)
-            callback(lastSizes);
+    server.listen(0, "localhost", function () {
+        spawn(path.join(__dirname, "lib", "cache_handler.exe"), [
+            "--mode", (mode === "fix") ? "download" : mode,
+            "--hash-file", hashPath,
+            "--playable-root", cacheRoot,
+            "--offline-root", offlineRoot,
+            "--user-dir", userData,
+            "--cdn-root", cdnRoot,
+            "--cache-mode", (cacheMode) ? cacheMode : "all",
+            "--cache-version", (versionString) ? versionString : "all",
+            "--port", server.address().port
+        ]).on("exit", function (code, signal) {
+            if (code !== 0 || signal) {
+                dialog.showErrorBox(
+                    "Sorry!",
+                    "Process \"" + mode + "\" failed with code " + code + " and signal " + signal + "."
+                );
+            }
+
+            server.close();
+            storageLoadingComplete(lastSizes);
+            if (callback)
+                callback(lastSizes);
+        });
     });
 }
 
