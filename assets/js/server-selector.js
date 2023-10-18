@@ -48,7 +48,7 @@ function setAppVersionText() {
 }
 
 function addServer() {
-    var jsonToModify = remotefs.readJsonSync(serversPath);
+    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
 
     var server = {};
     server["uuid"] = uuidv4();
@@ -70,7 +70,7 @@ function addServer() {
 }
 
 function editServer() {
-    var jsonToModify = remotefs.readJsonSync(serversPath);
+    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
     $.each(jsonToModify["servers"], function (key, value) {
         if (value["uuid"] == getSelectedServer()) {
             value["description"] =
@@ -92,7 +92,7 @@ function editServer() {
 }
 
 function deleteServer() {
-    var jsonToModify = remotefs.readJsonSync(serversPath);
+    var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
     var result = jsonToModify["servers"].filter(function (obj) {
         return obj.uuid === getSelectedServer();
     })[0];
