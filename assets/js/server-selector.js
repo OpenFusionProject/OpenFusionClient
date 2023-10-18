@@ -342,6 +342,7 @@ function handleCache(mode, versionString, cacheMode, callback) {
         path.dirname(versions[0].url);
 
     var lastSizes = {};
+    var buf = "";
 
     storageLoadingStart(versionString, cacheMode);
 
@@ -349,12 +350,19 @@ function handleCache(mode, versionString, cacheMode, callback) {
         sock.setEncoding("utf8");
 
         sock.on("data", function (data) {
-            data.split("\n").forEach(function (sizeString) {
-                if (sizeString === "") return;
+            buf += data;
 
-                lastSizes = JSON.parse(sizeString);
+            var end = buf.indexOf("\n");
+
+            while (end > 0) {
+                var sub = buf.substring(0, end);
+                buf = buf.substring(end + 1);
+
+                lastSizes = JSON.parse(sub);
                 storageLoadingUpdate(lastSizes);
-            });
+
+                end = buf.indexOf("\n");
+            }
         });
     });
 
