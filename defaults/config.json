@@ -1,7 +1,7 @@
 {
     "autoupdate-check": true,
     "cache-swapping": true,
-    "always-use-cdn": false,
+    "always-use-cdn": true,
     "verify-offline-cache": false,
     "last-version-initialized": "1.5"
 }
