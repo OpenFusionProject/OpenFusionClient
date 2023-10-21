@@ -2,159 +2,107 @@
     "versions": [
         {
             "name": "beta-20100104",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100104/",
-            "playable_size": 1898937430,
-            "offline_size": 498302868
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100104/"
         },
         {
             "name": "beta-20100119",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100119/",
-            "playable_size": 1962119814,
-            "offline_size": 532090781
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100119/"
         },
         {
             "name": "beta-20100207",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100207/",
-            "playable_size": 1915480756,
-            "offline_size": 517070093
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100207/"
         },
         {
             "name": "beta-20100307",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100307/",
-            "playable_size": 1944527727,
-            "offline_size": 523037304
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100307/"
         },
         {
             "name": "beta-20100322",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100322/",
-            "playable_size": 3667028290,
-            "offline_size": 990428569
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100322/"
         },
         {
             "name": "beta-20100413",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100413/",
-            "playable_size": 3686606449,
-            "offline_size": 993679155
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100413/"
         },
         {
             "name": "beta-20100502",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100502/",
-            "playable_size": 3707329381,
-            "offline_size": 998536709
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100502/"
         },
         {
             "name": "beta-20100524",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100524/",
-            "playable_size": 3728798955,
-            "offline_size": 1006498680
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100524/"
         },
         {
             "name": "beta-20100604",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100604/",
-            "playable_size": 3708507369,
-            "offline_size": 1000908158
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100604/"
         },
         {
             "name": "beta-20100616",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100616/",
-            "playable_size": 3727652532,
-            "offline_size": 1003244061
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100616/"
         },
         {
             "name": "beta-20100711",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100711/",
-            "playable_size": 3749781447,
-            "offline_size": 1008201089
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100711/"
         },
         {
             "name": "beta-20100728",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100728/",
-            "playable_size": 3743395312,
-            "offline_size": 1010622298
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100728/"
         },
         {
             "name": "beta-20100909",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100909/",
-            "playable_size": 3758419664,
-            "offline_size": 1013860677
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20100909/"
         },
         {
             "name": "beta-20101003",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101003/",
-            "playable_size": 3794257608,
-            "offline_size": 1021988749
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101003/"
         },
         {
             "name": "beta-20101011",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101011/",
-            "playable_size": 3794587065,
-            "offline_size": 1022182478
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101011/"
         },
         {
             "name": "beta-20101028",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101028/",
-            "playable_size": 3807285735,
-            "offline_size": 1025430139
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101028/"
         },
         {
             "name": "beta-20101123",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101123/",
-            "playable_size": 3809454979,
-            "offline_size": 1026041690
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20101123/"
         },
         {
             "name": "beta-20110213",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110213/",
-            "playable_size": 2369514137,
-            "offline_size": 682125537
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110213/"
         },
         {
             "name": "beta-20110314",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110314/",
-            "playable_size": 2379406501,
-            "offline_size": 686277543
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110314/"
         },
         {
             "name": "beta-20110330",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110330/",
-            "playable_size": 2370387925,
-            "offline_size": 684674109
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110330/"
         },
         {
             "name": "beta-20110424",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110424/",
-            "playable_size": 2420761667,
-            "offline_size": 697693210
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110424/"
         },
         {
             "name": "beta-20110523",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110523/",
-            "playable_size": 2444366341,
-            "offline_size": 703101511
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110523/"
         },
         {
             "name": "beta-20110725",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110725/",
-            "playable_size": 2487849562,
-            "offline_size": 717289102
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110725/"
         },
         {
             "name": "beta-20110818",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110818/",
-            "playable_size": 2504425998,
-            "offline_size": 719058600
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110818/"
         },
         {
             "name": "beta-20110912",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110912/",
-            "playable_size": 2530956034,
-            "offline_size": 725201024
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20110912/"
         },
         {
             "name": "beta-20111013",
-            "url": "http://cdn.dexlabs.systems/ff/big/beta-20111013/",
-            "playable_size": 2541857744,
-            "offline_size": 729959117
+            "url": "http://cdn.dexlabs.systems/ff/big/beta-20111013/"
         }
     ]
 }
