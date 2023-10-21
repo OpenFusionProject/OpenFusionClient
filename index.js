@@ -32,7 +32,7 @@ var hashPath = path.join(userData, "hashes.json");
 
 function initialSetup(firstTime) {
     if (!firstTime) {
-        // Migration from pre-1.4
+        // Migration from pre-1.5
         // Back everything up, just in case
         fs.copySync(configPath, configPath + ".bak");
         fs.copySync(serversPath, serversPath + ".bak");
@@ -93,8 +93,8 @@ app.on("ready", function () {
             initialSetup(true);
         } else {
             var config = fs.readJsonSync(configPath);
-            if (!config["last-version-initialized"]) {
-                console.log("Pre-1.4 config detected. Running migration.");
+            if (config["last-version-initialized"] !== "1.5") {
+                console.log("Pre-1.5 config detected. Running migration.");
                 initialSetup(false);
             } else {
                 showMainWindow();
