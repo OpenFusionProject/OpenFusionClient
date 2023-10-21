@@ -417,12 +417,6 @@ function loadCacheList() {
     });
 }
 
-function startHashCheck() {
-    setTimeout(function () {
-        handleCache("hash-check");
-    }, 0);
-}
-
 function performCacheSwap(newVersion) {
     var currentCache = path.join(cacheRoot, "FusionFall");
     var newCache = path.join(cacheRoot, newVersion);
