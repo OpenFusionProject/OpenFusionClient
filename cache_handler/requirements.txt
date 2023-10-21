@@ -1,0 +1,3 @@
+aiofiles
+httpx
+pyinstaller==3.5

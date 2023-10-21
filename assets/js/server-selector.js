@@ -10,7 +10,6 @@ var userData = remote.require("app").getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
-var hashPath = path.join(userData, "hashes.json");
 var cacheRoot = path.join(
     userData,
     "/../../LocalLow/Unity/Web Player/Cache"
@@ -289,8 +288,8 @@ function storageLoadingUpdate(allSizes) {
     $.each(allSizes, function (versionString, vSizes) {
         $.each(vSizes, function (cacheMode, sizes) {
             var label = document.getElementById(getCacheElemID(versionString, cacheMode, "label"));
-            if (label)
-                label.innerHTML = getCacheLabelText(sizes);
+            if (!label) return;
+            label.innerHTML = getCacheLabelText(sizes);
         });
     });
 }
@@ -341,7 +340,7 @@ function handleCache(mode, versionString, cacheMode, callback) {
         "http://cdn.dexlabs.systems/ff/big" :
         path.dirname(versions[0].url);
 
-    var lastSizes = {};
+    var lastSizes = { intact: 0, altered: 0, total: 0 };
     var buf = "";
 
     storageLoadingStart(versionString, cacheMode);
@@ -369,7 +368,6 @@ function handleCache(mode, versionString, cacheMode, callback) {
     server.listen(0, "localhost", function () {
         spawn(path.join(__dirname, "lib", "cache_handler.exe"), [
             "--mode", (mode === "fix") ? "download" : mode,
-            "--hash-file", hashPath,
             "--playable-root", cacheRoot,
             "--offline-root", offlineRoot,
             "--user-dir", userData,
