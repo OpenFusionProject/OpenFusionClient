@@ -18,6 +18,7 @@ var offlineRoot = path.join(cacheRoot, "Offline");
 
 var versionArray;
 var serverArray;
+var cacheSizes;
 var config;
 
 function enableServerListButtons() {
@@ -288,7 +289,13 @@ function storageLoadingUpdate(allSizes) {
     $.each(allSizes, function (versionString, vSizes) {
         $.each(vSizes, function (cacheMode, sizes) {
             var label = document.getElementById(getCacheElemID(versionString, cacheMode, "label"));
+
+            cacheSizes = cacheSizes || {};
+            cacheSizes[versionString] = cacheSizes[versionString] || {};
+            cacheSizes[versionString][cacheMode] = sizes || {};
+
             if (!label) return;
+
             label.innerHTML = getCacheLabelText(sizes);
         });
     });
@@ -417,6 +424,12 @@ function loadCacheList() {
     });
 }
 
+function startHashCheck() {
+    // only run once
+    if (!cacheSizes)
+        handleCache("hash-check");
+}
+
 function performCacheSwap(newVersion) {
     var currentCache = path.join(cacheRoot, "FusionFall");
     var newCache = path.join(cacheRoot, newVersion);
@@ -479,19 +492,34 @@ function prepGameInfo(serverUUID) {
         }
     }
 
-    handleCache("hash-check", versionInfo.name, "offline", function (sizes) {
-        var versionURL = (sizes.intact < sizes.total) ?
-            versionInfo.url :
-            "file:///" + path.join(offlineRoot, versionInfo.name).replace(/\\/g, "/") + "/";
-        console.log("Cache will expand from " + versionURL);
+    if (config["always-use-cdn"]) {
+        // if we always ignore the offline cache, just use the URL
+        setGameInfo(serverInfo, versionInfo.url);
+        return;
+    }
 
-        setGameInfo(serverInfo, versionURL);
-    });
+    var offlinePath = path.join(offlineRoot, versionInfo.name);
+    var offlineURL = "file:///" + offlinePath.replace(/\\/g, "/") + "/";
+
+    if (config["verify-offline-cache"]) {
+        // if required, do a full hash check, and use the offline cache only if it is fully intact
+        handleCache("hash-check", versionInfo.name, "offline", function (sizes) {
+            var versionURL = (sizes.intact < sizes.total) ? versionInfo.url : offlineURL;
+            setGameInfo(serverInfo, versionURL);
+        });
+        return;
+    }
+
+    // if main.unity3d is present, use the offline cache
+    var mainPath = path.join(offlinePath, "main.unity3d");
+    var versionURL = remotefs.existsSync(mainPath) ? versionInfo.url : offlineURL;
+    setGameInfo(serverInfo, versionURL);
 }
 
 // For writing loginInfo.php, assetInfo.php, etc.
 function setGameInfo(serverInfo, versionURL) {
     window.assetUrl = versionURL; // game-client.js needs to access this
+    console.log("Cache will expand from " + versionURL);
 
     remotefs.writeFileSync(path.join(__dirname, "assetInfo.php"), assetUrl);
     if (serverInfo.hasOwnProperty("endpoint")) {
