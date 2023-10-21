@@ -415,7 +415,9 @@ function loadCacheList() {
 
         $("#cache-tablebody").append(row);
     });
+}
 
+function startHashCheck() {
     setTimeout(function () {
         handleCache("hash-check");
     }, 0);
