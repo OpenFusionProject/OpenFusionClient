@@ -16,9 +16,12 @@ var cacheRoot = path.join(
 );
 var offlineRoot = path.join(cacheRoot, "Offline");
 
+var cdnString = "http://cdn.dexlabs.systems/ff/big";
+
 var versionArray;
 var serverArray;
 var cacheSizes;
+var defaultHashes;
 var config;
 
 function enableServerListButtons() {
@@ -37,6 +40,30 @@ function disableServerListButtons() {
     $("#of-editserver-button").prop("disabled", true);
     $("#of-deleteserver-button").addClass("disabled");
     $("#of-deleteserver-button").prop("disabled", true);
+}
+
+function enableVersionAddButton() {
+    $("#of-addversion-button").removeClass("disabled");
+    $("#of-addversion-button").prop("disabled", false);
+}
+
+function enableVersionListButtons() {
+    $("#of-editversion-button").removeClass("disabled");
+    $("#of-editversion-button").prop("disabled", false);
+    $("#of-deleteversion-button").removeClass("disabled");
+    $("#of-deleteversion-button").prop("disabled", false);
+}
+
+function disableVersionAddButton() {
+    $("#of-addversion-button").addClass("disabled");
+    $("#of-addversion-button").prop("disabled", true);
+}
+
+function disableVersionListButtons() {
+    $("#of-editversion-button").addClass("disabled");
+    $("#of-editversion-button").prop("disabled", true);
+    $("#of-deleteversion-button").addClass("disabled");
+    $("#of-deleteversion-button").prop("disabled", true);
 }
 
 function getAppVersion() {
@@ -74,8 +101,6 @@ function addServer() {
 
     jsonToModify["servers"].push(server);
 
-    console.log(serversPath);
-    console.log(JSON.stringify(jsonToModify, null, 4));
     remotefs.writeFileSync(serversPath, JSON.stringify(jsonToModify, null, 4));
     loadServerList();
 }
@@ -124,6 +149,84 @@ function restoreDefaultServers() {
     loadServerList();
 }
 
+function addVersion() {
+    var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
+
+    var version = {};
+    version["name"] =
+        $("#addversion-nameinput").val().length == 0
+            ? "custom-build-" + uuidv4().substring(0, 8)
+            : $("#addversion-nameinput").val();
+    version["url"] =
+        $("#addversion-urlinput").val().length == 0
+            ? cdnString + "/" + version["name"] + "/"
+            : $("#addversion-urlinput").val();
+
+    var matchingVersions = jsonToModify["versions"].filter(function (obj) {
+        return obj.name === version["name"];
+    });
+
+    if (matchingVersions.length > 0) return;
+
+    jsonToModify["versions"].push(version);
+
+    remotefs.writeFileSync(versionsPath, JSON.stringify(jsonToModify, null, 4));
+    loadCacheList();
+    startHashCheck(true);
+}
+
+function editVersion() {
+    var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
+    var edited = false;
+
+    $.each(jsonToModify["versions"], function (key, value) {
+        if (value["name"] == getSelectedVersion() && !defaultHashes.hasOwnProperty(value["name"])) {
+            value["name"] =
+                $("#editversion-nameinput").val().length == 0
+                    ? value["name"]
+                    : $("#editversion-nameinput").val();
+            value["url"] =
+                $("#editversion-urlinput").val().length == 0
+                    ? value["url"]
+                    : $("#editversion-urlinput").val();
+            edited = true;
+        }
+    });
+
+    if (!edited) return;
+
+    remotefs.writeFileSync(versionsPath, JSON.stringify(jsonToModify, null, 4));
+    loadCacheList();
+    startHashCheck(true);
+}
+
+function deleteVersion() {
+    var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
+
+    var result = jsonToModify["versions"].filter(function (obj) {
+        return obj.name === getSelectedVersion();
+    })[0];
+
+    if (defaultHashes.hasOwnProperty(result.name)) return;
+
+    var resultindex = jsonToModify["versions"].indexOf(result);
+
+    jsonToModify["versions"].splice(resultindex, 1);
+
+    remotefs.writeFileSync(versionsPath, JSON.stringify(jsonToModify, null, 4));
+    loadCacheList();
+    startHashCheck(true);
+}
+
+function restoreDefaultVersions() {
+    remotefs.copySync(
+        path.join(__dirname, "/defaults/versions.json"),
+        versionsPath
+    );
+    loadCacheList();
+    startHashCheck(true);
+}
+
 function loadGameVersions() {
     var versionJson = remotefs.readJsonSync(versionsPath);
     versionArray = versionJson["versions"];
@@ -142,8 +245,8 @@ function loadServerList() {
     var serverJson = remotefs.readJsonSync(serversPath);
     serverArray = serverJson["servers"];
 
+    deselectServer(); // Disable buttons until another server is selected
     $(".server-listing-entry").remove(); // Clear out old stuff, if any
-    disableServerListButtons(); // Disable buttons until another server is selected
 
     if (serverArray.length > 0) {
         // Servers were found in the JSON
@@ -169,6 +272,46 @@ function loadServerList() {
     }
 }
 
+function loadCacheList() {
+    var versionjson = remotefs.readJsonSync(versionsPath);
+    versionArray = versionjson["versions"];
+
+    if (!defaultHashes) {
+        defaultHashes = remotefs.readJsonSync(path.join(
+            __dirname,
+            "/defaults/hashes.json"
+        ));
+    }
+
+    deselectVersion();
+    $(".cache-listing-entry").remove();
+
+    $.each(versionArray, function (key, value) {
+        var row = document.createElement("tr");
+        row.className = "cache-listing-entry"
+        row.setAttribute("id", value.name);
+
+        var cellVersion = document.createElement("td");
+        cellVersion.textContent = value.name;
+        cellVersion.className = "text-monospace";
+
+        var cellPlayableCache = getCacheInfoCell(value.name, "playable");
+        var cellOfflineCache = getCacheInfoCell(value.name, "offline");
+
+        row.appendChild(cellVersion);
+        row.appendChild(cellPlayableCache);
+        row.appendChild(cellOfflineCache);
+
+        $("#cache-tablebody").append(row);
+    });
+}
+
+function startHashCheck(forced) {
+    // only run once unless forced
+    if (forced || !cacheSizes)
+        handleCache("hash-check");
+}
+
 function getCacheElemID(versionString, cacheMode, elementName) {
     return [versionString, cacheMode, "cache", elementName].filter(function (value) {
         return typeof value !== "undefined";
@@ -180,6 +323,9 @@ function getCacheButtonID(versionString, cacheMode, buttonMode) {
 }
 
 function getCacheLabelText(sizes) {
+    if (!sizes || sizes.total === 0)
+        return "?.?? GB / ?.?? GB";
+
     var gb = 1 << 30;
     var labelText = (sizes.intact / gb).toFixed(2) + " / " + (sizes.total / gb).toFixed(2) + " GB";
 
@@ -218,7 +364,7 @@ function getCacheInfoCell(versionString, cacheMode) {
     var labelCache = document.createElement("label");
     labelCache.setAttribute("id", labelID);
     labelCache.setAttribute("for", divID);
-    labelCache.innerHTML = " 0.00 GB / 0.00 GB"
+    labelCache.innerHTML = getCacheLabelText();
 
     var divCacheButtons = document.createElement("div");
     divCacheButtons.setAttribute("id", labelID);
@@ -262,6 +408,9 @@ function storageLoadingStart(vString, cMode) {
         }
     });
     var cacheModes = (cMode) ? [cMode] : ["offline", "playable"];
+
+    deselectVersion();
+    disableVersionAddButton();
 
     $.each(versionStrings, function (vKey, versionString) {
         $.each(cacheModes, function (cKey, cacheMode) {
@@ -337,6 +486,8 @@ function storageLoadingComplete(allSizes) {
             }
         });
     });
+
+    enableVersionAddButton();
 }
 
 function handleCache(mode, versionString, cacheMode, callback) {
@@ -344,7 +495,7 @@ function handleCache(mode, versionString, cacheMode, callback) {
         return obj.name === versionString;
     });
     var cdnRoot = (versions.length === 0) ?
-        "http://cdn.dexlabs.systems/ff/big" :
+        cdnString :
         path.dirname(versions[0].url);
 
     var lastSizes = { intact: 0, altered: 0, total: 0 };
@@ -373,16 +524,20 @@ function handleCache(mode, versionString, cacheMode, callback) {
     });
 
     server.listen(0, "localhost", function () {
-        spawn(path.join(__dirname, "lib", "cache_handler.exe"), [
-            "--mode", (mode === "fix") ? "download" : mode,
-            "--playable-root", cacheRoot,
-            "--offline-root", offlineRoot,
-            "--user-dir", userData,
-            "--cdn-root", cdnRoot,
-            "--cache-mode", (cacheMode) ? cacheMode : "all",
-            "--cache-version", (versionString) ? versionString : "all",
-            "--port", server.address().port
-        ]).on("exit", function (code, signal) {
+        spawn(
+            path.join(__dirname, "lib", "cache_handler.exe"),
+            [
+                "--mode", (mode === "fix") ? "download" : mode,
+                "--playable-root", cacheRoot,
+                "--offline-root", offlineRoot,
+                "--user-dir", userData,
+                "--cdn-root", cdnRoot,
+                "--cache-mode", (cacheMode) ? cacheMode : "all",
+                "--cache-version", (versionString) ? versionString : "all",
+                "--port", server.address().port
+            ],
+            { stdio: "inherit" }
+        ).on("exit", function (code, signal) {
             if (code !== 0 || signal) {
                 dialog.showErrorBox(
                     "Sorry!",
@@ -396,38 +551,6 @@ function handleCache(mode, versionString, cacheMode, callback) {
                 callback(lastSizes);
         });
     });
-}
-
-function loadCacheList() {
-    var versionjson = remotefs.readJsonSync(versionsPath);
-    versionArray = versionjson["versions"];
-
-    $(".cache-listing-entry").remove();
-
-    $.each(versionArray, function (key, value) {
-        var row = document.createElement("tr");
-        row.className = "cache-listing-entry"
-        row.setAttribute("id", value.name);
-
-        var cellVersion = document.createElement("td");
-        cellVersion.textContent = value.name;
-        cellVersion.className = "text-monospace";
-
-        var cellPlayableCache = getCacheInfoCell(value.name, "playable");
-        var cellOfflineCache = getCacheInfoCell(value.name, "offline");
-
-        row.appendChild(cellVersion);
-        row.appendChild(cellPlayableCache);
-        row.appendChild(cellOfflineCache);
-
-        $("#cache-tablebody").append(row);
-    });
-}
-
-function startHashCheck() {
-    // only run once
-    if (!cacheSizes)
-        handleCache("hash-check");
 }
 
 function performCacheSwap(newVersion) {
@@ -594,6 +717,10 @@ function getSelectedServer() {
     return $("#server-tablebody > tr.bg-primary").prop("id");
 }
 
+function getSelectedVersion() {
+    return $("#cache-tablebody > tr.bg-primary").prop("id");
+}
+
 function connectToServer() {
     // Get ID of the selected server, which corresponds to its UUID in the json
     console.log("Connecting to server with UUID of " + getSelectedServer());
@@ -615,8 +742,23 @@ function deselectServer() {
     $(".server-listing-entry").removeClass("bg-primary");
 }
 
+function deselectVersion() {
+    disableVersionListButtons();
+    $(".cache-listing-entry").removeClass("bg-primary");
+}
+
 $("#server-table").on("click", ".server-listing-entry", function (event) {
     enableServerListButtons();
+    $(this).addClass("bg-primary").siblings().removeClass("bg-primary");
+});
+
+$("#cache-table").on("click", ".cache-listing-entry", function (event) {
+    // wait for the add button to be re-enabled first
+    if ($("#of-addversion-button").prop("disabled")) return;
+    // do not select default builds
+    if (defaultHashes.hasOwnProperty($(this).attr("id"))) return;
+
+    enableVersionListButtons();
     $(this).addClass("bg-primary").siblings().removeClass("bg-primary");
 });
 
@@ -627,9 +769,8 @@ $("#server-table").on("dblclick", ".server-listing-entry", function (event) {
 });
 
 $("#of-editservermodal").on("show.bs.modal", function (e) {
-    var jsonToModify = remotefs.readJsonSync(
-        path.join(userData, "servers.json")
-    );
+    var jsonToModify = remotefs.readJsonSync(serversPath);
+
     $.each(jsonToModify["servers"], function (key, value) {
         if (value["uuid"] == getSelectedServer()) {
             $("#editserver-descinput")[0].value = value["description"];
@@ -646,9 +787,27 @@ $("#of-editservermodal").on("show.bs.modal", function (e) {
     });
 });
 
+$("#of-editversionmodal").on("show.bs.modal", function (e) {
+    var jsonToModify = remotefs.readJsonSync(versionsPath);
+
+    $.each(jsonToModify["versions"], function (key, value) {
+        if (value["name"] == getSelectedVersion()) {
+            $("#editversion-nameinput")[0].value = value["name"];
+            $("#editversion-urlinput")[0].value = value["url"];
+        }
+    });
+});
+
 $("#of-deleteservermodal").on("show.bs.modal", function (e) {
     var result = serverArray.filter(function (obj) {
         return obj.uuid === getSelectedServer();
     })[0];
     $("#deleteserver-servername").html(result.description);
+});
+
+$("#of-deleteversionmodal").on("show.bs.modal", function (e) {
+    var result = versionArray.filter(function (obj) {
+        return obj.name === getSelectedVersion();
+    })[0];
+    $("#deleteversion-versionname").html(result.name);
 });

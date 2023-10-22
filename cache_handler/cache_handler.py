@@ -152,6 +152,24 @@ def compile_file_list(args: Namespace) -> List[FileInfo]:
     with open(Path(args.user_dir) / 'hashes.json') as r:
         hash_dict = json.load(r)
 
+    with open(Path(args.user_dir) / 'versions.json') as r:
+        versions = json.load(r)['versions']
+
+    updated = False
+    for version in versions:
+        if version['name'] not in hash_dict:
+            hash_dict[version['name']] = {
+                'playable_size': 0,
+                'offline_size': 0,
+                'playable': {},
+                'offline': {},
+            }
+            updated =  True
+
+    if updated:
+        with open(Path(args.user_dir) / 'hashes.json', 'w') as w:
+            json.dump(hash_dict, w, indent=4)
+
     cache_modes = ['offline', 'playable'] if args.cache_mode == 'all' else [args.cache_mode]
     cache_versions = list(hash_dict) if args.cache_version == 'all' else [args.cache_version]
 

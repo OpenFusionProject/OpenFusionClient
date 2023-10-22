@@ -115,6 +115,26 @@ body {
     border-color: #6699ff;
 }
 
+#of-addversionmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-editversionmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-deleteversionmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-restoreversionsmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
 .form-control,
 .form-control:focus {
     border-color: #0099ff;
