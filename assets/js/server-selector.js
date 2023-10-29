@@ -490,7 +490,7 @@ function storageLoadingComplete(allSizes) {
     enableVersionAddButton();
 }
 
-function handleCache(mode, versionString, cacheMode, callback) {
+function handleCache(operation, versionString, cacheMode, callback) {
     var versions = versionArray.filter(function (obj) {
         return obj.name === versionString;
     });
@@ -527,21 +527,24 @@ function handleCache(mode, versionString, cacheMode, callback) {
         spawn(
             path.join(__dirname, "lib", "cache_handler.exe"),
             [
-                "--mode", (mode === "fix") ? "download" : mode,
+                "--operation", operation,
                 "--playable-root", cacheRoot,
                 "--offline-root", offlineRoot,
                 "--user-dir", userData,
                 "--cdn-root", cdnRoot,
-                "--cache-mode", (cacheMode) ? cacheMode : "all",
-                "--cache-version", (versionString) ? versionString : "all",
-                "--port", server.address().port
-            ],
-            { stdio: "inherit" }
+                "--cache-mode", cacheMode || "all",
+                "--cache-version", versionString || "all",
+                "--port", server.address().port,
+                "--permanent-caches"
+            ].concat(Object.keys(defaultHashes)),
+            {
+                stdio: "inherit"
+            }
         ).on("exit", function (code, signal) {
             if (code !== 0 || signal) {
                 dialog.showErrorBox(
                     "Sorry!",
-                    "Process \"" + mode + "\" failed with code " + code + " and signal " + signal + "."
+                    "Process \"" + operation + "\" failed with code " + code + " and signal " + signal + "."
                 );
             }
 
