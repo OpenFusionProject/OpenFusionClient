@@ -258,6 +258,7 @@
                                     required=""
                                     minlength="1"
                                     maxlength="70"
+                                    oninput="validateServerSave('add')"
                                 /><label for="addserver-ipinput"
                                     >Server IP</label
                                 ><input
@@ -267,6 +268,7 @@
                                     placeholder="127.0.0.1:23000"
                                     required=""
                                     pattern="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$"
+                                    oninput="validateServerSave('add')"
                                 /><label for="addserver-versionselect"
                                     >Game Version:&nbsp;</label
                                 ><select
@@ -274,6 +276,7 @@
                                     id="addserver-versionselect"
                                     required=""
                                     style="margin-left: -5px"
+                                    oninput="validateServerSave('add')"
                                 ></select>
                             </form>
                         </div>
@@ -330,6 +333,7 @@
                                     required=""
                                     minlength="1"
                                     maxlength="70"
+                                    oninput="validateServerSave('edit')"
                                 /><label for="editserver-ipinput"
                                     >Server IP</label
                                 ><input
@@ -339,6 +343,7 @@
                                     placeholder="127.0.0.1:23000"
                                     required=""
                                     pattern="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$"
+                                    oninput="validateServerSave('edit')"
                                 /><label for="editserver-versionselect"
                                     >Game Version:&nbsp;</label
                                 ><select
@@ -346,6 +351,7 @@
                                     id="editserver-versionselect"
                                     required=""
                                     style="margin-left: -5px"
+                                    oninput="validateServerSave('edit')"
                                 ></select>
                             </form>
                         </div>
@@ -584,6 +590,7 @@
                                     required=""
                                     minlength="1"
                                     maxlength="70"
+                                    oninput="validateVersionSave('add')"
                                 /><label for="addversion-urlinput"
                                     >Version URL</label
                                 ><input
@@ -593,6 +600,7 @@
                                     placeholder="http://cdn.dexlabs.systems/custom-build-000/"
                                     required=""
                                     pattern="^(https?|file):\/\/\/?([-a-zA-Z0-9@:%._\+~#= ]{1,256}\/){1,64}$"
+                                    oninput="validateVersionSave('add')"
                                 />
                             </form>
                         </div>
@@ -638,7 +646,7 @@
                             </button>
                         </div>
                         <div class="modal-body">
-                            <form id="addversion-form" class="needs-validation">
+                            <form id="editversion-form" class="needs-validation">
                                 <label for="editversion-nameinput"
                                     >Version Name</label
                                 ><input
@@ -649,6 +657,7 @@
                                     required=""
                                     minlength="1"
                                     maxlength="70"
+                                    oninput="validateVersionSave('edit')"
                                 /><label for="editversion-urlinput"
                                     >Version URL</label
                                 ><input
@@ -658,6 +667,7 @@
                                     placeholder="http://cdn.dexlabs.systems/custom-build-000/"
                                     required=""
                                     pattern="^(https?|file):\/\/\/?([-a-zA-Z0-9@:%._\+~#= ]{1,256}\/){1,64}$"
+                                    oninput="validateVersionSave('edit')"
                                 />
                             </form>
                         </div>
