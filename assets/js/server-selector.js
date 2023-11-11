@@ -83,6 +83,36 @@ function setAppVersionText() {
     $("#of-versionnumber").text("v" + getAppVersion());
 }
 
+function validateServerSave(modalName) {
+    // works everytime a key is entered into the server save form
+    var descInput = document.getElementById(modalName + "server-descinput");
+    var ipInput = document.getElementById(modalName + "server-ipinput");
+    var button = document.getElementById(modalName + "server-savebutton");
+    var valid = true;
+
+    descInput.classList.remove("invalidinput");
+    ipInput.classList.remove("invalidinput");
+
+    if (
+        descInput.value.length < parseInt(descInput.getAttribute("minlength")) ||
+        descInput.value.length > parseInt(descInput.getAttribute("maxlength"))
+    ) {
+        descInput.classList.add("invalidinput");
+        valid = false;
+    }
+
+    if (!(new RegExp(ipInput.getAttribute("pattern"))).test(ipInput.value)) {
+        ipInput.classList.add("invalidinput");
+        valid = false;
+    }
+
+    if (valid) {
+        button.removeAttribute("disabled");
+    } else {
+        button.setAttribute("disabled", "");
+    }
+}
+
 function addServer() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
 
@@ -149,6 +179,36 @@ function restoreDefaultServers() {
     loadServerList();
 }
 
+function validateVersionSave(modalName) {
+    // works everytime a key is entered into the server save form
+    var nameInput = document.getElementById(modalName + "version-nameinput");
+    var urlInput = document.getElementById(modalName + "version-urlinput");
+    var button = document.getElementById(modalName + "version-savebutton");
+    var valid = true;
+
+    nameInput.classList.remove("invalidinput");
+    urlInput.classList.remove("invalidinput");
+
+    if (
+        nameInput.value.length < parseInt(nameInput.getAttribute("minlength")) ||
+        nameInput.value.length > parseInt(nameInput.getAttribute("maxlength"))
+    ) {
+        nameInput.classList.add("invalidinput");
+        valid = false;
+    }
+
+    if (!(new RegExp(urlInput.getAttribute("pattern"))).test(urlInput.value)) {
+        urlInput.classList.add("invalidinput");
+        valid = false;
+    }
+
+    if (valid) {
+        button.removeAttribute("disabled");
+    } else {
+        button.setAttribute("disabled", "");
+    }
+}
+
 function addVersion() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
 
@@ -168,16 +228,16 @@ function addVersion() {
 
     if (matchingVersions.length > 0) return;
 
-    jsonToModify["versions"].push(version);
+    jsonToModify["versions"].unshift(version);
 
     remotefs.writeFileSync(versionsPath, JSON.stringify(jsonToModify, null, 4));
     loadCacheList();
-    startHashCheck(true);
+    handleCache("hash-check", version["name"]);
 }
 
 function editVersion() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
-    var edited = false;
+    var editedVersionString = null;
 
     $.each(jsonToModify["versions"], function (key, value) {
         if (value["name"] == getSelectedVersion() && !defaultHashes.hasOwnProperty(value["name"])) {
@@ -189,15 +249,15 @@ function editVersion() {
                 $("#editversion-urlinput").val().length == 0
                     ? value["url"]
                     : $("#editversion-urlinput").val();
-            edited = true;
+            editedVersionString = value["name"];
         }
     });
 
-    if (!edited) return;
+    if (!editedVersionString) return;
 
     remotefs.writeFileSync(versionsPath, JSON.stringify(jsonToModify, null, 4));
     loadCacheList();
-    startHashCheck(true);
+    handleCache("hash-check", editedVersionString);
 }
 
 function deleteVersion() {
@@ -215,7 +275,7 @@ function deleteVersion() {
 
     remotefs.writeFileSync(versionsPath, JSON.stringify(jsonToModify, null, 4));
     loadCacheList();
-    startHashCheck(true);
+    delete cacheSizes[result.name];
 }
 
 function restoreDefaultVersions() {
@@ -224,7 +284,7 @@ function restoreDefaultVersions() {
         versionsPath
     );
     loadCacheList();
-    startHashCheck(true);
+    handleCache("hash-check");
 }
 
 function loadGameVersions() {
@@ -270,6 +330,10 @@ function loadServerList() {
         // No servers are added, make sure placeholder is visible
         $("#server-listing-placeholder").attr("hidden", false);
     }
+
+    // Check these once to get them into the correct state
+    validateServerSave("add");
+    validateServerSave("edit");
 }
 
 function loadCacheList() {
@@ -304,12 +368,19 @@ function loadCacheList() {
 
         $("#cache-tablebody").append(row);
     });
+
+    storageLoadingStart();
+    storageLoadingUpdate(cacheSizes);
+    storageLoadingComplete(cacheSizes);
+
+    // Check these once to get them into the correct state
+    validateVersionSave("add");
+    validateVersionSave("edit");
 }
 
-function startHashCheck(forced) {
-    // only run once unless forced
-    if (forced || !cacheSizes)
-        handleCache("hash-check");
+function startHashCheck() {
+    // only run once
+    if (!cacheSizes) handleCache("hash-check");
 }
 
 function getCacheElemID(versionString, cacheMode, elementName) {
@@ -364,7 +435,11 @@ function getCacheInfoCell(versionString, cacheMode) {
     var labelCache = document.createElement("label");
     labelCache.setAttribute("id", labelID);
     labelCache.setAttribute("for", divID);
-    labelCache.innerHTML = getCacheLabelText();
+    labelCache.innerHTML = getCacheLabelText(
+        (cacheSizes && cacheSizes[versionString]) ?
+        cacheSizes[versionString][cacheMode] :
+        null
+    );
 
     var divCacheButtons = document.createElement("div");
     divCacheButtons.setAttribute("id", labelID);
@@ -494,9 +569,7 @@ function handleCache(operation, versionString, cacheMode, callback) {
     var versions = versionArray.filter(function (obj) {
         return obj.name === versionString;
     });
-    var cdnRoot = (versions.length === 0) ?
-        cdnString :
-        path.dirname(versions[0].url);
+    var cdnRoot = (versions.length === 0) ? cdnString : versions[0].url;
 
     var lastSizes = { intact: 0, altered: 0, total: 0 };
     var buf = "";
@@ -528,14 +601,16 @@ function handleCache(operation, versionString, cacheMode, callback) {
             path.join(__dirname, "lib", "cache_handler.exe"),
             [
                 "--operation", operation,
+                // roots below contain version-agnostic main directories for caches
                 "--playable-root", cacheRoot,
                 "--offline-root", offlineRoot,
                 "--user-dir", userData,
+                // CDN root contains version-specific directory, unless cacheMode is "all"
                 "--cdn-root", cdnRoot,
                 "--cache-mode", cacheMode || "all",
                 "--cache-version", versionString || "all",
                 "--port", server.address().port,
-                "--permanent-caches"
+                "--official-caches"
             ].concat(Object.keys(defaultHashes)),
             {
                 stdio: "inherit"
@@ -644,8 +719,9 @@ function prepGameInfo(serverUUID) {
 
 // For writing loginInfo.php, assetInfo.php, etc.
 function setGameInfo(serverInfo, versionURL) {
-    window.assetUrl = versionURL; // game-client.js needs to access this
-    console.log("Cache will expand from " + versionURL);
+    var versionURLRoot = versionURL.endsWith("/") ? versionURL : versionURL + "/";
+    window.assetUrl = versionURLRoot; // game-client.js needs to access this
+    console.log("Cache will expand from " + versionURLRoot);
 
     remotefs.writeFileSync(path.join(__dirname, "assetInfo.php"), assetUrl);
     if (serverInfo.hasOwnProperty("endpoint")) {

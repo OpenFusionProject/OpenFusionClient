@@ -48,7 +48,7 @@ class FileInfo:
             local_root=self.local_root,
             url_root=self.url_root,
             current_local_path=(self.current_local_path / suffix),
-            current_url=(self.url_root.rstrip('/') + '/' + suffix.lstrip('/')),
+            current_url=(self.current_url.rstrip('/') + '/' + suffix.lstrip('/')),
             sha256=(sha256 or self.sha256),
         )
 
@@ -63,7 +63,7 @@ class FileInfo:
 class FileInfoGroup:
     version: str
     mode: str
-    permanent: bool
+    is_official: bool
     local_root: Path
     url_root: str
     file_info_list: List[FileInfo]
@@ -164,8 +164,11 @@ async def hash_check_unregistered(writer: asyncio.StreamWriter, file_info_groups
             sha256='',
         )
 
+        path_set = {str(fi.current_local_path.resolve())
+                    for fi in file_info_group.file_info_list}
+
         for file_path in file_info_group.local_root.glob('**/*'):
-            if any(file_path.samefile(file_info) for file_info in file_info_group.file_info_list):
+            if file_path.is_dir() or str(file_path.resolve()) in path_set:
                 continue
 
             # assume file is intact
@@ -180,7 +183,10 @@ async def download_unregistered_file_all(writer: asyncio.StreamWriter, file_info
     remote_path = Path(file_info.current_url.replace('file:', '', 1).lstrip('/'))
 
     for file_path in remote_path.glob('**/*'):
-        new_file_info = file_info.resolve_full(file_path)
+        if file_path.is_dir():
+            continue
+
+        new_file_info = file_info.resolve(file_path.relative_to(remote_path).as_posix())
 
         new_file_info.current_local_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(file_path, new_file_info.current_local_path)
@@ -188,8 +194,6 @@ async def download_unregistered_file_all(writer: asyncio.StreamWriter, file_info
         # assume file is intact
         await register_size_and_hash(new_file_info)
         await send_message(writer)
-
-    await send_message(writer)
 
 
 async def download_unregistered_http_all(
@@ -204,7 +208,10 @@ async def download_unregistered_http_all(
 
     file_info.current_local_path.mkdir(exist_ok=True)
 
-    page = await httpx.get(file_info.current_url).content
+    response = await client.get(file_info.current_url)
+    response.raise_for_status()
+
+    page = response.content
     bs = BeautifulSoup(page, 'html.parser')
     links = bs.find_all('a', href=True)
 
@@ -350,7 +357,7 @@ async def hash_check(writer: asyncio.StreamWriter, file_info_groups: List[FileIn
                          if file_info_group.file_info_list]
     unregistered_groups = [file_info_group
                            for file_info_group in file_info_groups
-                           if not file_info_group.permanent]
+                           if not file_info_group.is_official]
 
     if registered_groups:
         await hash_check_registered(writer, registered_groups, update_freq=update_freq)
@@ -373,7 +380,7 @@ async def download(writer: asyncio.StreamWriter, file_info_groups: List[FileInfo
                          if file_info_group.file_info_list]
     unregistered_groups = [file_info_group
                            for file_info_group in file_info_groups
-                           if not file_info_group.permanent]
+                           if not file_info_group.is_official]
 
     async with httpx.AsyncClient(limits=httpx.Limits(max_connections=max_connections),
                                  timeout=httpx.Timeout(None)) as client:
@@ -394,10 +401,10 @@ async def delete(writer: asyncio.StreamWriter, file_info_groups: List[FileInfoGr
     """
     registered_groups = [file_info_group
                          for file_info_group in file_info_groups
-                         if file_info_group.permanent]
+                         if file_info_group.is_official]
     unregistered_groups = [file_info_group
                            for file_info_group in file_info_groups
-                           if not file_info_group.permanent]
+                           if not file_info_group.is_official]
 
     if registered_groups:
         await delete_registered(writer, registered_groups)
@@ -455,7 +462,11 @@ def compile_file_lists(args: Namespace) -> List[FileInfoGroup]:
 
             local_root = args.offline_root if cache_mode == 'offline' else args.playable_root
             local_dir = swapped_path(local_root, args.user_dir, cache_version, cache_mode)
-            url_dir = args.cdn_root.rstrip('/') + '/' + cache_version.lstrip('/')
+            url_dir = (
+                args.cdn_root.rstrip('/') + '/' + cache_version.lstrip('/')
+                if args.cache_version == 'all' else
+                args.cdn_root
+            )
 
             file_info_version = FileInfo(
                 version=cache_version,
@@ -484,13 +495,28 @@ def compile_file_lists(args: Namespace) -> List[FileInfoGroup]:
             file_info_groups.append(FileInfoGroup(
                 version=cache_version,
                 mode=cache_mode,
-                permanent=(cache_version in args.permanent_caches),
+                is_official=(cache_version in args.official_caches),
                 local_root=local_dir,
                 url_root=url_dir,
                 file_info_list=file_info_list,
             ))
 
     return file_info_groups
+
+
+def write_hash_updates(args: Namespace) -> None:
+    if not hash_dict_updated:
+        return
+
+    for version_name in hash_dict:
+        if version_name in args.official_caches:
+            continue
+
+        for cache_mode in ['playable', 'offline']:
+            hash_dict[version_name][cache_mode] = dict(sorted(hash_dict[version_name][cache_mode].items()))
+
+    with open(Path(args.user_dir) / 'hashes.json', 'w') as w:
+        json.dump(hash_dict, w, indent=4)
 
 
 async def prep_and_run_coroutine(args: Namespace) -> None:
@@ -504,20 +530,16 @@ async def prep_and_run_coroutine(args: Namespace) -> None:
         'fix': download,
         'delete': delete,
     }
-    await coroutines[args.operation](writer, file_info_groups)
+
+    try:
+        await coroutines[args.operation](writer, file_info_groups)
+    finally:
+        await send_message(writer)
 
     writer.close()
     await writer.wait_closed()
 
-    if hash_dict_updated:
-        print('Updated hashes.json!')
-        # todo: prettify
-        for version_name in hash_dict:
-            if version_name not in args.permanent_caches:
-                hash_dict[version_name]['playable'] = dict(sorted(hash_dict[version_name]['playable'].items()))
-                hash_dict[version_name]['offline'] = dict(sorted(hash_dict[version_name]['offline'].items()))
-        with open(Path(args.user_dir) / 'hashes.json', 'w') as w:
-            json.dump(hash_dict, w, indent=4)
+    write_hash_updates(args)
 
 
 def parse_args() -> Namespace:
@@ -530,7 +552,7 @@ def parse_args() -> Namespace:
     parser.add_argument('--cache-mode', dest='cache_mode', type=str, default='all', choices=['all', 'offline', 'playable'])
     parser.add_argument('--cache-version', dest='cache_version', type=str, default='all')
     parser.add_argument('--port', type=str, required=True)
-    parser.add_argument('--permanent-caches', dest='permanent_caches', nargs='*', type=str, default=[])
+    parser.add_argument('--official-caches', dest='official_caches', nargs='*', type=str, default=[])
     return parser.parse_args()
 
 

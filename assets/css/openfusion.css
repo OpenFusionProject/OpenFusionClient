@@ -148,6 +148,14 @@ select {
     color: #fff;
 }
 
+.modal {
+    overflow-y: auto;
+}
+
+.invalidinput {
+    border-color: #ff0000;
+}
+
 button:disabled {
     cursor: not-allowed;
     pointer-events: all !important;
