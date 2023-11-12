@@ -14,7 +14,8 @@ var cacheRoot = path.join(
     userData,
     "/../../LocalLow/Unity/Web Player/Cache"
 );
-var offlineRoot = path.join(cacheRoot, "Offline");
+var offlineRootDefault = path.join(cacheRoot, "Offline");
+var offlineRoot = offlineRootDefault;
 
 var cdnString = "http://cdn.dexlabs.systems/ff/big";
 
@@ -292,6 +293,38 @@ function restoreDefaultVersions() {
     handleCache("hash-check");
 }
 
+function editConfig() {
+    var jsonToModify = JSON.parse(remotefs.readJsonSync(configPath));
+
+    jsonToModify["autoupdate-check"] = $("#editconfig-autoupdate").prop("checked");
+    jsonToModify["cache-swapping"] = $("#editconfig-cacheswapping").prop("checked");
+    jsonToModify["enable-offline-cache"] = $("#editconfig-enableofflinecache").prop("checked");
+    jsonToModify["verify-offline-cache"] = $("#editconfig-verifyofflinecache").prop("checked");
+
+    var dirInput = $("#editconfig-offlinecachelocation:text").val();
+
+    jsonToModify["offline-cache-location"] = (
+        remotefs.existsSync(dirInput) &&
+        remotefs.statSync(dirInput).isDirectory()
+    ) ? dirInput : offlineRoot;
+
+    remotefs.writeFileSync(configPath, JSON.stringify(jsonToModify, null, 4));
+    loadConfig();
+}
+
+function validateCacheLocation() {
+    var input = document.getElementById("editconfig-offlinecachelocation");
+    var button = document.getElementById("editconfig-savebutton");
+
+    input.classList.remove("invalidinput");
+    button.removeAttribute("disabled");
+
+    if (!remotefs.existsSync(input.value) || !remotefs.statSync(input.value).isDirectory()) {
+        input.classList.add("invalidinput");
+        button.setAttribute("disabled", "");
+    }
+}
+
 function loadGameVersions() {
     var versionJson = remotefs.readJsonSync(versionsPath);
     versionArray = versionJson["versions"];
@@ -304,6 +337,16 @@ function loadGameVersions() {
 function loadConfig() {
     // Load config object globally
     config = remotefs.readJsonSync(configPath);
+
+    $("#editconfig-autoupdate").prop("checked", config["autoupdate-check"]);
+    $("#editconfig-cacheswapping").prop("checked", config["cache-swapping"]);
+    $("#editconfig-enableofflinecache").prop("checked", config["enable-offline-cache"]);
+    $("#editconfig-verifyofflinecache").prop("checked", config["verify-offline-cache"]);
+
+    offlineRoot = config["offline-cache-location"] || offlineRootDefault;
+    $("#editconfig-offlinecachelocation:text").val(offlineRoot);
+
+    validateCacheLocation();
 }
 
 function loadServerList() {
@@ -685,7 +728,7 @@ function prepGameInfo(serverUUID) {
         }
     }
 
-    if (config["always-use-cdn"]) {
+    if (!config["enable-offline-cache"]) {
         // if we always ignore the offline cache, just use the URL
         setGameInfo(serverInfo, versionInfo.url);
         return;
@@ -897,4 +940,9 @@ $("#of-deleteversionmodal").on("show.bs.modal", function (e) {
 
 $("#of-editcacheconfigmodal").on("show.bs.modal", function (e) {
     if (!cacheSizes) handleCache("hash-check");
+});
+
+$("#of-editconfigmodal").on("show.bs.modal", function (e) {
+    // best to keep this synced on modal show
+    loadConfig();
 });
