@@ -196,8 +196,7 @@ function validateVersionSave(modalName) {
 
     if (
         matchingVersions.length > allowedMatches ||
-        nameInput.value.length < parseInt(nameInput.getAttribute("minlength")) ||
-        nameInput.value.length > parseInt(nameInput.getAttribute("maxlength"))
+        !(new RegExp(nameInput.getAttribute("pattern"))).test(nameInput.value)
     ) {
         nameInput.classList.add("invalidinput");
         valid = false;
