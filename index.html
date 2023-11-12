@@ -267,7 +267,7 @@
                                     id="addserver-ipinput"
                                     placeholder="127.0.0.1:23000"
                                     required=""
-                                    pattern="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$"
+                                    pattern="^([-a-zA-Z0-9]+\.)+[-a-zA-Z0-9]+:[0-9]+$"
                                     oninput="validateServerSave('add')"
                                 /><label for="addserver-versionselect"
                                     >Game Version:&nbsp;</label
@@ -342,7 +342,7 @@
                                     id="editserver-ipinput"
                                     placeholder="127.0.0.1:23000"
                                     required=""
-                                    pattern="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$"
+                                    pattern="^([-a-zA-Z0-9]+\.)+[-a-zA-Z0-9]+:[0-9]+$"
                                     oninput="validateServerSave('edit')"
                                 /><label for="editserver-versionselect"
                                     >Game Version:&nbsp;</label

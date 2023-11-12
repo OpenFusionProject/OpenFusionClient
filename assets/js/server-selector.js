@@ -180,7 +180,7 @@ function restoreDefaultServers() {
 }
 
 function validateVersionSave(modalName) {
-    // works everytime a key is entered into the server save form
+    // works everytime a key is entered into the version save form
     var nameInput = document.getElementById(modalName + "version-nameinput");
     var urlInput = document.getElementById(modalName + "version-urlinput");
     var button = document.getElementById(modalName + "version-savebutton");
@@ -189,7 +189,13 @@ function validateVersionSave(modalName) {
     nameInput.classList.remove("invalidinput");
     urlInput.classList.remove("invalidinput");
 
+    var matchingVersions = versionArray.filter(function (obj) {
+        return obj.name === nameInput.value;
+    });
+    var allowedMatches = (modalName === "edit") ? 1 : 0;
+
     if (
+        matchingVersions.length > allowedMatches ||
         nameInput.value.length < parseInt(nameInput.getAttribute("minlength")) ||
         nameInput.value.length > parseInt(nameInput.getAttribute("maxlength"))
     ) {
@@ -330,10 +336,6 @@ function loadServerList() {
         // No servers are added, make sure placeholder is visible
         $("#server-listing-placeholder").attr("hidden", false);
     }
-
-    // Check these once to get them into the correct state
-    validateServerSave("add");
-    validateServerSave("edit");
 }
 
 function loadCacheList() {
@@ -372,10 +374,6 @@ function loadCacheList() {
     storageLoadingStart();
     storageLoadingUpdate(cacheSizes);
     storageLoadingComplete(cacheSizes);
-
-    // Check these once to get them into the correct state
-    validateVersionSave("add");
-    validateVersionSave("edit");
 }
 
 function startHashCheck() {
@@ -847,6 +845,14 @@ $("#server-table").on("dblclick", ".server-listing-entry", function (event) {
     connectToServer();
 });
 
+$("#of-addservermodal").on("show.bs.modal", function (e) {
+    validateServerSave("add");
+});
+
+$("#of-addversionmodal").on("show.bs.modal", function (e) {
+    validateVersionSave("add");
+});
+
 $("#of-editservermodal").on("show.bs.modal", function (e) {
     var jsonToModify = remotefs.readJsonSync(serversPath);
 
@@ -864,6 +870,8 @@ $("#of-editservermodal").on("show.bs.modal", function (e) {
             $("#editserver-versionselect")[0].selectedIndex = versionIndex;
         }
     });
+
+    validateServerSave("edit");
 });
 
 $("#of-editversionmodal").on("show.bs.modal", function (e) {
@@ -875,6 +883,8 @@ $("#of-editversionmodal").on("show.bs.modal", function (e) {
             $("#editversion-urlinput")[0].value = value["url"];
         }
     });
+
+    validateVersionSave("edit");
 });
 
 $("#of-deleteservermodal").on("show.bs.modal", function (e) {
