@@ -113,6 +113,18 @@
                             data-toggle="modal"
                             data-bs-tooltip=""
                             data-placement="bottom"
+                            id="of-editconfig-button"
+                            type="button"
+                            title="Edit Configuration"
+                            data-target="#of-editconfigmodal"
+                        >
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button
+                            class="btn btn-primary mr-1"
+                            data-toggle="modal"
+                            data-bs-tooltip=""
+                            data-placement="bottom"
                             id="of-editcache-button"
                             type="button"
                             title="Edit Game Builds"
@@ -473,12 +485,93 @@
                 class="modal fade"
                 role="dialog"
                 tabindex="-1"
+                id="of-editconfigmodal"
+            >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Edit Configuration</h4>
+                            <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                            >
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editconfig-form" class="needs-validation">
+                                <label for="editconfig-autoupdate"
+                                    >Automatically update the client:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-autoupdate"
+                                />
+                                <label for="editconfig-cacheswapping"
+                                    >Swap game caches to avoid unnecessary downloads:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-cacheswapping"
+                                />
+                                <label for="editconfig-enableofflinecache"
+                                    >Use offline caches when they are available:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-enableofflinecache"
+                                />
+                                <label for="editconfig-verifyofflinecache"
+                                    >Verify offline caches every time they are loaded:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-verifyofflinecache"
+                                />
+                                <label for="editconfig-offlinecachelocation"
+                                    >Select Offline Cache Location:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    id="editconfig-offlinecachelocation"
+                                    type="text"
+                                    oninput="validateCacheLocator()"
+                                />
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button
+                                class="btn btn-primary border rounded border-primary btn-danger border-danger"
+                                id="editconfig-cancel"
+                                type="button"
+                                data-dismiss="modal"
+                            >
+                                Cancel</button
+                            ><button
+                                class="btn btn-primary border rounded border-primary btn-success border-success"
+                                id="editconfig-savebutton"
+                                type="submit"
+                                data-dismiss="modal"
+                                form="editconfig-form"
+                                onclick="editConfig();"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="modal fade"
+                role="dialog"
+                tabindex="-1"
                 id="of-editcacheconfigmodal"
             >
                 <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h4 class="modal-title">Edit Cache Config</h4>
+                            <h4 class="modal-title">Edit Game Builds</h4>
                             <button
                                 type="button"
                                 class="close"
