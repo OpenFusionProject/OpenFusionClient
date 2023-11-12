@@ -375,11 +375,6 @@ function loadCacheList() {
     storageLoadingComplete(cacheSizes);
 }
 
-function startHashCheck() {
-    // only run once
-    if (!cacheSizes) handleCache("hash-check");
-}
-
 function getCacheElemID(versionString, cacheMode, elementName) {
     return [versionString, cacheMode, "cache", elementName].filter(function (value) {
         return typeof value !== "undefined";
@@ -898,4 +893,8 @@ $("#of-deleteversionmodal").on("show.bs.modal", function (e) {
         return obj.name === getSelectedVersion();
     })[0];
     $("#deleteversion-versionname").html(result.name);
+});
+
+$("#of-editcacheconfigmodal").on("show.bs.modal", function (e) {
+    if (!cacheSizes) handleCache("hash-check");
 });
