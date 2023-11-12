@@ -309,6 +309,9 @@ function editConfig() {
     ) ? dirInput : offlineRoot;
 
     remotefs.writeFileSync(configPath, JSON.stringify(jsonToModify, null, 4));
+
+    if (jsonToModify["offline-cache-location"] !== offlineRoot)
+        handleCache("hash-check");
     loadConfig();
 }
 
