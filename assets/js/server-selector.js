@@ -294,7 +294,7 @@ function restoreDefaultVersions() {
 }
 
 function editConfig() {
-    var jsonToModify = JSON.parse(remotefs.readJsonSync(configPath));
+    var jsonToModify = JSON.parse(remotefs.readFileSync(configPath));
 
     jsonToModify["autoupdate-check"] = $("#editconfig-autoupdate").prop("checked");
     jsonToModify["cache-swapping"] = $("#editconfig-cacheswapping").prop("checked");
@@ -312,7 +312,7 @@ function editConfig() {
     remotefs.writeFileSync(configPath, JSON.stringify(jsonToModify, null, 4));
 
     loadConfig();
-    if (shouldChangeRoot) handleCache("hash-check");
+    if (shouldChangeRoot) handleCache("hash-check", null, "offline");
 }
 
 function validateCacheLocation() {
