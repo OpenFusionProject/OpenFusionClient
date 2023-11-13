@@ -302,17 +302,17 @@ function editConfig() {
     jsonToModify["verify-offline-cache"] = $("#editconfig-verifyofflinecache").prop("checked");
 
     var dirInput = $("#editconfig-offlinecachelocation:text").val();
-
-    jsonToModify["offline-cache-location"] = (
+    var shouldChangeRoot = (
         remotefs.existsSync(dirInput) &&
         remotefs.statSync(dirInput).isDirectory()
-    ) ? dirInput : offlineRoot;
+    );
+
+    jsonToModify["offline-cache-location"] = shouldChangeRoot ? dirInput : offlineRoot;
 
     remotefs.writeFileSync(configPath, JSON.stringify(jsonToModify, null, 4));
 
-    if (jsonToModify["offline-cache-location"] !== offlineRoot)
-        handleCache("hash-check");
     loadConfig();
+    if (shouldChangeRoot) handleCache("hash-check");
 }
 
 function validateCacheLocation() {
