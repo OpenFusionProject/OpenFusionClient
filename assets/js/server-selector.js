@@ -312,6 +312,7 @@ function editConfig() {
     remotefs.writeFileSync(configPath, JSON.stringify(jsonToModify, null, 4));
 
     loadConfig();
+    // check all offline caches if the offline root changes
     if (shouldChangeRoot) handleCache("hash-check", null, "offline");
 }
 
@@ -350,6 +351,7 @@ function loadConfig() {
     $("#editconfig-enableofflinecache").prop("checked", config["enable-offline-cache"]);
     $("#editconfig-verifyofflinecache").prop("checked", config["verify-offline-cache"]);
 
+    // alter offline root globally
     offlineRoot = config["offline-cache-location"] || offlineRootDefault;
     $("#editconfig-offlinecachelocation:text").val(offlineRoot);
 
@@ -360,7 +362,7 @@ function loadServerList() {
     var serverJson = remotefs.readJsonSync(serversPath);
     serverArray = serverJson["servers"];
 
-    deselectServer(); // Disable buttons until another server is selected
+    deselectServer(); // Remove selection and disable buttons until another server is selected
     $(".server-listing-entry").remove(); // Clear out old stuff, if any
 
     if (serverArray.length > 0) {
@@ -391,6 +393,7 @@ function loadCacheList() {
     // we might want to use a new version right away, so reload them
     loadGameVersions();
 
+    // load default hashes.json for reference while running the cache handler
     if (!defaultHashes) {
         defaultHashes = remotefs.readJsonSync(path.join(
             __dirname,
@@ -398,8 +401,8 @@ function loadCacheList() {
         ));
     }
 
-    deselectVersion();
-    $(".cache-listing-entry").remove();
+    deselectVersion(); // Remove selection and disable buttons until another server is selected
+    $(".cache-listing-entry").remove(); // Clear out old stuff, if any
 
     $.each(versionArray, function (key, value) {
         var row = document.createElement("tr");
@@ -420,6 +423,7 @@ function loadCacheList() {
         $("#cache-tablebody").append(row);
     });
 
+    // simulate a cache handler run so that the buttons update properly
     storageLoadingStart();
     storageLoadingUpdate(cacheSizes);
     storageLoadingComplete(cacheSizes);
@@ -477,6 +481,7 @@ function getCacheInfoCell(versionString, cacheMode) {
     var labelCache = document.createElement("label");
     labelCache.setAttribute("id", labelID);
     labelCache.setAttribute("for", divID);
+    // pull existing info from cacheSizes when available
     labelCache.innerHTML = getCacheLabelText(
         (cacheSizes && cacheSizes[versionString]) ?
         cacheSizes[versionString][cacheMode] :
@@ -487,6 +492,7 @@ function getCacheInfoCell(versionString, cacheMode) {
     divCacheButtons.setAttribute("id", labelID);
 
     $.each(settings, function (buttonMode, config) {
+        // only delete allowed for playable game caches
         if (cacheMode === "playable" && buttonMode !== "delete") {
             return;
         }
@@ -501,6 +507,7 @@ function getCacheInfoCell(versionString, cacheMode) {
         buttonCache.setAttribute("class", config.class);
         buttonCache.setAttribute("title", config.tooltip);
         buttonCache.setAttribute("type", "button");
+        // handler setup
         buttonCache.setAttribute("onclick", "handleCache(\"" + buttonMode + "\", \"" + versionString + "\", \"" + cacheMode + "\");");
         buttonCache.appendChild(iconItalic);
 
@@ -515,6 +522,7 @@ function getCacheInfoCell(versionString, cacheMode) {
 }
 
 function storageLoadingStart(vString, cMode) {
+    // determine which cache versions and modes to visually update
     var versionStrings = [];
     $.each(versionArray, function (key, value) {
         if (vString) {
@@ -526,9 +534,11 @@ function storageLoadingStart(vString, cMode) {
     });
     var cacheModes = (cMode) ? [cMode] : ["offline", "playable"];
 
+    // deselect and disable the add version button until they are re-enabled
     deselectVersion();
     disableVersionAddButton();
 
+    // turn buttons into spinners
     $.each(versionStrings, function (vKey, versionString) {
         $.each(cacheModes, function (cKey, cacheMode) {
             var buttonDelete = document.getElementById(getCacheButtonID(versionString, cacheMode, "delete"));
@@ -552,6 +562,7 @@ function storageLoadingStart(vString, cMode) {
 }
 
 function storageLoadingUpdate(allSizes) {
+    // update cacheSizes and display results
     $.each(allSizes, function (versionString, vSizes) {
         $.each(vSizes, function (cacheMode, sizes) {
             var label = document.getElementById(getCacheElemID(versionString, cacheMode, "label"));
@@ -568,6 +579,7 @@ function storageLoadingUpdate(allSizes) {
 }
 
 function storageLoadingComplete(allSizes) {
+    // re-enable buttons according to the sizes that were read
     $.each(allSizes, function (versionString, vSizes) {
         $.each(vSizes, function (cacheMode, sizes) {
             var buttonDelete = document.getElementById(getCacheButtonID(versionString, cacheMode, "delete"));
@@ -604,24 +616,33 @@ function storageLoadingComplete(allSizes) {
         });
     });
 
+    // finally, re-enable the version add button
     enableVersionAddButton();
 }
 
 function handleCache(operation, versionString, cacheMode, callback) {
+    // see if any versions match (could be undefined or null)
     var versions = versionArray.filter(function (obj) {
         return obj.name === versionString;
     });
+    // pull version url from the found object, if none found, use the default cdn link
     var cdnRoot = (versions.length === 0) ? cdnString : versions[0].url;
 
     var lastSizes = { intact: 0, altered: 0, total: 0 };
     var buf = "";
 
+    // start loading on the given version and mode (could be undefined or null, which means 'all')
     storageLoadingStart(versionString, cacheMode);
 
+    // create the server and socket listener
     var server = net.createServer(function (sock) {
         sock.setEncoding("utf8");
 
         sock.on("data", function (data) {
+            // read data until the next \n, and keep reading
+            // sometimes the updates are buffered, so there might be multiple objects
+            // per update, and partial objects as well
+            // buffer parsing allows us to handle these cases
             buf += data;
 
             var end = buf.indexOf("\n");
@@ -630,6 +651,7 @@ function handleCache(operation, versionString, cacheMode, callback) {
                 var sub = buf.substring(0, end);
                 buf = buf.substring(end + 1);
 
+                // run a storage update here
                 lastSizes = JSON.parse(sub);
                 storageLoadingUpdate(lastSizes);
 
@@ -638,6 +660,7 @@ function handleCache(operation, versionString, cacheMode, callback) {
         });
     });
 
+    // start listening on a randomly acquired port, and spawn cache handler when ready
     server.listen(0, "localhost", function () {
         spawn(
             path.join(__dirname, "lib", "cache_handler.exe"),
@@ -651,7 +674,9 @@ function handleCache(operation, versionString, cacheMode, callback) {
                 "--cdn-root", cdnRoot,
                 "--cache-mode", cacheMode || "all",
                 "--cache-version", versionString || "all",
+                // learn port from the server object and tell the script where to connect
                 "--port", server.address().port,
+                // tell the script which versions and caches are official
                 "--official-caches"
             ].concat(Object.keys(defaultHashes)),
             {
@@ -665,10 +690,12 @@ function handleCache(operation, versionString, cacheMode, callback) {
                 );
             }
 
+            // when the script exits, close the server
             server.close();
+            // set button state accordingly
             storageLoadingComplete(lastSizes);
-            if (callback)
-                callback(lastSizes);
+            // then run the given callback (if any)
+            if (callback) callback(lastSizes);
         });
     });
 }
@@ -753,7 +780,7 @@ function prepGameInfo(serverUUID) {
         return;
     }
 
-    // if main.unity3d is present, use the offline cache
+    // otherwise, if main.unity3d is present, use the offline cache
     var mainPath = path.join(offlinePath, "main.unity3d");
     var versionURL = remotefs.existsSync(mainPath) ? versionInfo.url : offlineURL;
     setGameInfo(serverInfo, versionURL);
@@ -761,6 +788,7 @@ function prepGameInfo(serverUUID) {
 
 // For writing loginInfo.php, assetInfo.php, etc.
 function setGameInfo(serverInfo, versionURL) {
+    // slash fix if people mess it up via text editors
     var versionURLRoot = versionURL.endsWith("/") ? versionURL : versionURL + "/";
     window.assetUrl = versionURLRoot; // game-client.js needs to access this
     console.log("Cache will expand from " + versionURLRoot);
@@ -838,6 +866,7 @@ function getSelectedServer() {
     return $("#server-tablebody > tr.bg-primary").prop("id");
 }
 
+// Returns the name of the version with the selected background color.
 function getSelectedVersion() {
     return $("#cache-tablebody > tr.bg-primary").prop("id");
 }
@@ -863,16 +892,19 @@ function deselectServer() {
     $(".server-listing-entry").removeClass("bg-primary");
 }
 
+// If applicable, deselect currently selected version.
 function deselectVersion() {
     disableVersionListButtons();
     $(".cache-listing-entry").removeClass("bg-primary");
 }
 
+// Select a server
 $("#server-table").on("click", ".server-listing-entry", function (event) {
     enableServerListButtons();
     $(this).addClass("bg-primary").siblings().removeClass("bg-primary");
 });
 
+// Select a version (if allowed)
 $("#cache-table").on("click", ".cache-listing-entry", function (event) {
     // wait for the add button to be re-enabled first
     if ($("#of-addversion-button").prop("disabled")) return;
@@ -898,6 +930,7 @@ $("#of-addversionmodal").on("show.bs.modal", function (e) {
 });
 
 $("#of-editservermodal").on("show.bs.modal", function (e) {
+    // populate the edit modal with existing values
     var jsonToModify = remotefs.readJsonSync(serversPath);
 
     $.each(jsonToModify["servers"], function (key, value) {
@@ -919,6 +952,7 @@ $("#of-editservermodal").on("show.bs.modal", function (e) {
 });
 
 $("#of-editversionmodal").on("show.bs.modal", function (e) {
+    // populate the edit modal with existing values
     var jsonToModify = remotefs.readJsonSync(versionsPath);
 
     $.each(jsonToModify["versions"], function (key, value) {
@@ -931,6 +965,7 @@ $("#of-editversionmodal").on("show.bs.modal", function (e) {
     validateVersionSave("edit");
 });
 
+// Replace server name to delete
 $("#of-deleteservermodal").on("show.bs.modal", function (e) {
     var result = serverArray.filter(function (obj) {
         return obj.uuid === getSelectedServer();
@@ -938,6 +973,7 @@ $("#of-deleteservermodal").on("show.bs.modal", function (e) {
     $("#deleteserver-servername").html(result.description);
 });
 
+// Replace version name to delete
 $("#of-deleteversionmodal").on("show.bs.modal", function (e) {
     var result = versionArray.filter(function (obj) {
         return obj.name === getSelectedVersion();
@@ -945,11 +981,13 @@ $("#of-deleteversionmodal").on("show.bs.modal", function (e) {
     $("#deleteversion-versionname").html(result.name);
 });
 
+// Run the global hash check once and only if the cache modal is ever shown
 $("#of-editcacheconfigmodal").on("show.bs.modal", function (e) {
     if (!cacheSizes) handleCache("hash-check");
 });
 
+// Keep all config values synced on modal show
+// Avoids cases where people forget that they changed the offline root but did not save
 $("#of-editconfigmodal").on("show.bs.modal", function (e) {
-    // best to keep this synced on modal show
     loadConfig();
 });
