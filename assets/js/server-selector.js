@@ -331,6 +331,10 @@ function validateCacheLocation() {
 function loadGameVersions() {
     var versionJson = remotefs.readJsonSync(versionsPath);
     versionArray = versionJson["versions"];
+
+    $("#addserver-versionselect").empty();
+    $("#editserver-versionselect").empty();
+
     $.each(versionArray, function (key, value) {
         $(new Option(value.name, "val")).appendTo("#addserver-versionselect");
         $(new Option(value.name, "val")).appendTo("#editserver-versionselect");
@@ -384,8 +388,8 @@ function loadServerList() {
 }
 
 function loadCacheList() {
-    var versionjson = remotefs.readJsonSync(versionsPath);
-    versionArray = versionjson["versions"];
+    // we might want to use a new version right away, so reload them
+    loadGameVersions();
 
     if (!defaultHashes) {
         defaultHashes = remotefs.readJsonSync(path.join(
