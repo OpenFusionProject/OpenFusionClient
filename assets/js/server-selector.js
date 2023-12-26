@@ -782,7 +782,7 @@ function prepGameInfo(serverUUID) {
 
     // otherwise, if main.unity3d is present, use the offline cache
     var mainPath = path.join(offlinePath, "main.unity3d");
-    var versionURL = remotefs.existsSync(mainPath) ? versionInfo.url : offlineURL;
+    var versionURL = !remotefs.existsSync(mainPath) ? versionInfo.url : offlineURL;
     setGameInfo(serverInfo, versionURL);
 }
 
