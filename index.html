@@ -109,6 +109,30 @@
                     </div>
                     <div class="col-4 d-inline-flex justify-content-end">
                         <button
+                            class="btn btn-primary mr-1"
+                            data-toggle="modal"
+                            data-bs-tooltip=""
+                            data-placement="bottom"
+                            id="of-editconfig-button"
+                            type="button"
+                            title="Edit Configuration"
+                            data-target="#of-editconfigmodal"
+                        >
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button
+                            class="btn btn-primary mr-1"
+                            data-toggle="modal"
+                            data-bs-tooltip=""
+                            data-placement="bottom"
+                            id="of-editcache-button"
+                            type="button"
+                            title="Edit Game Builds"
+                            data-target="#of-editcacheconfigmodal"
+                        >
+                            <i class="fas fa-database"></i>
+                        </button>
+                        <button
                             class="btn btn-primary disabled"
                             id="of-connect-button"
                             type="button"
@@ -159,6 +183,13 @@
                                 data-target="#of-restoreserversmodal"
                                 >Reset to Default Servers</a
                             >
+                            <a
+                                href="#of-restoreversionsmodal"
+                                onclick="$('#of-aboutmodal').modal('toggle')"
+                                data-toggle="modal"
+                                data-target="#of-restoreversionsmodal"
+                                >Reset to Default Game Builds</a
+                            >
                         </div>
                         <div class="modal-footer">
                             <div class="row flex-fill">
@@ -169,7 +200,7 @@
                                         data-bs-tooltip=""
                                         type="button"
                                         title="Github Page"
-                                        onclick="window.open(&#39;https://github.com/OpenFusionProject/OpenFusion&#39;,&#39;_blank&#39;);"
+                                        onclick="window.open('https://github.com/OpenFusionProject/OpenFusion','_blank');"
                                     >
                                         <i
                                             class="fab fa-github"
@@ -181,7 +212,7 @@
                                         data-bs-tooltip=""
                                         type="button"
                                         title="Discord Chat"
-                                        onclick="window.open(&#39;https://discord.gg/DYavckB&#39;,&#39;_blank&#39;);"
+                                        onclick="window.open('https://discord.gg/DYavckB','_blank');"
                                     >
                                         <i
                                             class="fab fa-discord"
@@ -238,6 +269,7 @@
                                     required=""
                                     minlength="1"
                                     maxlength="70"
+                                    oninput="validateServerSave('add')"
                                 /><label for="addserver-ipinput"
                                     >Server IP</label
                                 ><input
@@ -245,8 +277,10 @@
                                     type="text"
                                     id="addserver-ipinput"
                                     placeholder="127.0.0.1:23000"
+                                    value="127.0.0.1:23000"
                                     required=""
-                                    pattern="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$"
+                                    pattern="^([-a-zA-Z0-9]+\.)+[-a-zA-Z0-9]+:[0-9]+$"
+                                    oninput="validateServerSave('add')"
                                 /><label for="addserver-versionselect"
                                     >Game Version:&nbsp;</label
                                 ><select
@@ -254,6 +288,7 @@
                                     id="addserver-versionselect"
                                     required=""
                                     style="margin-left: -5px"
+                                    oninput="validateServerSave('add')"
                                 ></select>
                             </form>
                         </div>
@@ -310,7 +345,8 @@
                                     required=""
                                     minlength="1"
                                     maxlength="70"
-                                /><label for="addserver-ipinput"
+                                    oninput="validateServerSave('edit')"
+                                /><label for="editserver-ipinput"
                                     >Server IP</label
                                 ><input
                                     class="form-control form-row w-75"
@@ -318,7 +354,8 @@
                                     id="editserver-ipinput"
                                     placeholder="127.0.0.1:23000"
                                     required=""
-                                    pattern="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$"
+                                    pattern="^([-a-zA-Z0-9]+\.)+[-a-zA-Z0-9]+:[0-9]+$"
+                                    oninput="validateServerSave('edit')"
                                 /><label for="editserver-versionselect"
                                     >Game Version:&nbsp;</label
                                 ><select
@@ -326,6 +363,7 @@
                                     id="editserver-versionselect"
                                     required=""
                                     style="margin-left: -5px"
+                                    oninput="validateServerSave('edit')"
                                 ></select>
                             </form>
                         </div>
@@ -339,7 +377,7 @@
                                 Cancel</button
                             ><button
                                 class="btn btn-primary border rounded border-primary btn-success border-success"
-                                id="addserver-savebutton"
+                                id="editserver-savebutton"
                                 type="submit"
                                 data-dismiss="modal"
                                 form="editserver-form"
@@ -432,10 +470,405 @@
                                 Cancel</button
                             ><button
                                 class="btn btn-primary border rounded border-primary btn-danger border-danger"
-                                id="deleteserver-button"
+                                id="restoreservers-button"
                                 type="button"
                                 data-dismiss="modal"
                                 onclick="restoreDefaultServers();"
+                            >
+                                Yes, Restore
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="modal fade"
+                role="dialog"
+                tabindex="-1"
+                id="of-editconfigmodal"
+            >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Edit Configuration</h4>
+                            <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                            >
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editconfig-form" class="needs-validation">
+                                <label for="editconfig-autoupdate"
+                                    >Automatically update the client:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-autoupdate"
+                                />
+                                <label for="editconfig-cacheswapping"
+                                    >Swap game caches to avoid unnecessary downloads:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-cacheswapping"
+                                />
+                                <label for="editconfig-enableofflinecache"
+                                    >Use offline caches when they are available:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-enableofflinecache"
+                                />
+                                <label for="editconfig-verifyofflinecache"
+                                    >Verify offline caches every time they are loaded:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="checkbox"
+                                    id="editconfig-verifyofflinecache"
+                                />
+                                <label for="editconfig-offlinecachelocation"
+                                    >Select Offline Cache Location:</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    id="editconfig-offlinecachelocation"
+                                    type="text"
+                                    oninput="validateCacheLocation()"
+                                />
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button
+                                class="btn btn-primary border rounded border-primary btn-danger border-danger"
+                                id="editconfig-cancel"
+                                type="button"
+                                data-dismiss="modal"
+                            >
+                                Cancel</button
+                            ><button
+                                class="btn btn-primary border rounded border-primary btn-success border-success"
+                                id="editconfig-savebutton"
+                                type="submit"
+                                data-dismiss="modal"
+                                form="editconfig-form"
+                                onclick="editConfig();"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="modal fade"
+                role="dialog"
+                tabindex="-1"
+                id="of-editcacheconfigmodal"
+            >
+                <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Edit Game Builds</h4>
+                            <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                            >
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div
+                                class="row row-cols-2 d-xl-flex justify-content-center justify-content-xl-start"
+                                id="of-versionbuttons"
+                                style="padding-bottom: 16px"
+                            >
+                                <div
+                                    class="col-4 text-left d-inline-flex justify-content-xl-start"
+                                    id="cache-buttons"
+                                >
+                                    <button
+                                        class="btn btn-success mr-1"
+                                        data-toggle="modal"
+                                        data-bs-tooltip=""
+                                        data-placement="bottom"
+                                        id="of-addversion-button"
+                                        type="button"
+                                        title="Add Version"
+                                        data-target="#of-addversionmodal"
+                                        onclick="deselectVersion()"
+                                    >
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button
+                                        class="btn btn-primary mr-1 disabled"
+                                        data-toggle="modal"
+                                        data-bs-tooltip=""
+                                        data-placement="bottom"
+                                        id="of-editversion-button"
+                                        type="button"
+                                        title="Edit Version"
+                                        data-target="#of-editversionmodal"
+                                        disabled=""
+                                    >
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button
+                                        class="btn btn-danger mr-1 disabled"
+                                        data-toggle="modal"
+                                        data-bs-tooltip=""
+                                        data-placement="bottom"
+                                        id="of-deleteversion-button"
+                                        type="button"
+                                        title="Delete Version"
+                                        data-target="#of-deleteversionmodal"
+                                        disabled=""
+                                    >
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div
+                                class="table-responsive text-center border rounded border-primary"
+                                id="cache-table"
+                            >
+                                <table class="table table-striped table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Game Version</th>
+                                            <th>Game Cache</th>
+                                            <th>Offline Cache</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cache-tablebody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="modal fade"
+                role="dialog"
+                tabindex="-1"
+                id="of-addversionmodal"
+            >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Add Server</h4>
+                            <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                            >
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addversion-form" class="needs-validation">
+                                <label for="addversion-nameinput"
+                                    >Version Name</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="text"
+                                    id="addversion-nameinput"
+                                    placeholder="custom-build-000"
+                                    required=""
+                                    pattern="^[-a-zA-Z0-9_]{1,70}$"
+                                    oninput="validateVersionSave('add')"
+                                /><label for="addversion-urlinput"
+                                    >Version URL</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="text"
+                                    id="addversion-urlinput"
+                                    placeholder="http://cdn.dexlabs.systems/custom-build-000/"
+                                    required=""
+                                    pattern="^(https?|file):\/\/\/?([-a-zA-Z0-9@:%._\+~#= ]{1,256}\/){1,64}$"
+                                    oninput="validateVersionSave('add')"
+                                />
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button
+                                class="btn btn-primary border rounded border-primary btn-danger border-danger"
+                                id="addversion-cancel"
+                                type="button"
+                                data-dismiss="modal"
+                            >
+                                Cancel</button
+                            ><button
+                                class="btn btn-primary border rounded border-primary btn-success border-success"
+                                id="addversion-savebutton"
+                                type="submit"
+                                data-dismiss="modal"
+                                form="addversion-form"
+                                onclick="addVersion();"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="modal fade"
+                role="dialog"
+                tabindex="-1"
+                id="of-editversionmodal"
+            >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Edit Version</h4>
+                            <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                            >
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editversion-form" class="needs-validation">
+                                <label for="editversion-nameinput"
+                                    >Version Name</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="text"
+                                    id="editversion-nameinput"
+                                    placeholder="custom-build-000"
+                                    required=""
+                                    pattern="^[-a-zA-Z0-9_]{1,70}$"
+                                    oninput="validateVersionSave('edit')"
+                                /><label for="editversion-urlinput"
+                                    >Version URL</label
+                                ><input
+                                    class="form-control form-row w-75"
+                                    type="text"
+                                    id="editversion-urlinput"
+                                    placeholder="http://cdn.dexlabs.systems/custom-build-000/"
+                                    required=""
+                                    pattern="^(https?|file):\/\/\/?([-a-zA-Z0-9@:%._\+~#= ]{1,256}\/){1,64}$"
+                                    oninput="validateVersionSave('edit')"
+                                />
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button
+                                class="btn btn-primary border rounded border-primary btn-danger border-danger"
+                                id="editversion-cancel"
+                                type="button"
+                                data-dismiss="modal"
+                            >
+                                Cancel</button
+                            ><button
+                                class="btn btn-primary border rounded border-primary btn-success border-success"
+                                id="editversion-savebutton"
+                                type="submit"
+                                data-dismiss="modal"
+                                form="editversion-form"
+                                onclick="editVersion();"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="modal fade"
+                role="dialog"
+                tabindex="-1"
+                id="of-deleteversionmodal"
+            >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Are you sure?</h4>
+                            <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                            >
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="lead">
+                                Do you really want to delete<br />"<a
+                                    id="deleteversion-versionname"
+                                    >VERSION_NAME</a
+                                >"?<br /><br />You could always re-add it later.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button
+                                class="btn btn-primary border rounded border-primary"
+                                type="button"
+                                data-dismiss="modal"
+                            >
+                                Cancel</button
+                            ><button
+                                class="btn btn-primary border rounded border-primary btn-danger border-danger"
+                                id="deleteversion-button"
+                                type="button"
+                                data-dismiss="modal"
+                                onclick="deleteVersion();"
+                            >
+                                Yes, Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="modal fade"
+                role="dialog"
+                tabindex="-1"
+                id="of-restoreversionsmodal"
+            >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Are you sure?</h4>
+                            <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                            >
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="lead">
+                                Do you really want to restore the default
+                                versions?
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button
+                                class="btn btn-primary border rounded border-primary"
+                                type="button"
+                                data-dismiss="modal"
+                            >
+                                Cancel</button
+                            ><button
+                                class="btn btn-primary border rounded border-primary btn-danger border-danger"
+                                id="restoreversions-button"
+                                type="button"
+                                data-dismiss="modal"
+                                onclick="restoreDefaultVersions();"
                             >
                                 Yes, Restore
                             </button>
