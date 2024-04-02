@@ -7,7 +7,7 @@
         "postinstall": "npx patch-package && npm explore electron-prebuilt -- npm run postinstall",
         "start": "electron .",
         "pack": "electron-builder --win --ia32 --dir",
-        "dist": "electron-builder --win --ia32",
+        "dist": "electron-builder --win --ia32 --publish=never",
         "prettier": "npx prettier --write ."
     },
     "author": "OpenFusion Contributors",
