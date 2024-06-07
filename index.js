@@ -28,14 +28,16 @@ var userData = app.getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
+var hashPath = path.join(userData, "hashes.json");
 
 function initialSetup(firstTime) {
     if (!firstTime) {
-        // Migration from pre-1.4
+        // Migration from pre-1.6
         // Back everything up, just in case
-        fs.copySync(configPath, configPath + ".bak");
-        fs.copySync(serversPath, serversPath + ".bak");
-        fs.copySync(versionsPath, versionsPath + ".bak");
+        if (fs.existsSync(configPath)) fs.copySync(configPath, configPath + ".bak");
+        if (fs.existsSync(serversPath)) fs.copySync(serversPath, serversPath + ".bak");
+        if (fs.existsSync(versionsPath)) fs.copySync(versionsPath, versionsPath + ".bak");
+        if (fs.existsSync(hashPath)) fs.copySync(hashPath, hashPath + ".bak");
     } else {
         // First-time setup
         // Copy default servers
@@ -48,6 +50,7 @@ function initialSetup(firstTime) {
     // Copy default versions and config
     fs.copySync(path.join(__dirname, "/defaults/versions.json"), versionsPath);
     fs.copySync(path.join(__dirname, "/defaults/config.json"), configPath);
+    fs.copySync(path.join(__dirname, "/defaults/hashes.json"), hashPath);
 
     console.log("JSON files copied.");
     showMainWindow();
@@ -90,8 +93,8 @@ app.on("ready", function () {
             initialSetup(true);
         } else {
             var config = fs.readJsonSync(configPath);
-            if (!config["last-version-initialized"]) {
-                console.log("Pre-1.4 config detected. Running migration.");
+            if (config["last-version-initialized"] !== "1.6") {
+                console.log("Pre-1.6 config detected. Running migration.");
                 initialSetup(false);
             } else {
                 showMainWindow();
@@ -128,6 +131,7 @@ function showMainWindow() {
         mainWindow.webContents.executeJavaScript("loadConfig();");
         mainWindow.webContents.executeJavaScript("loadGameVersions();");
         mainWindow.webContents.executeJavaScript("loadServerList();");
+        mainWindow.webContents.executeJavaScript("loadCacheList();");
     });
 
     mainWindow.webContents.on("plugin-crashed", function () {

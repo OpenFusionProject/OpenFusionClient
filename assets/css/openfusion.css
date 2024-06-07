@@ -80,6 +80,11 @@ body {
     background-repeat: repeat;
 }
 
+.btn-warning {
+    background-image: url("../../assets/img/btn-warning-bg.png");
+    background-repeat: repeat;
+}
+
 #of-aboutmodal > .modal-dialog > .modal-content {
     background-color: #093363;
     border-color: #6699ff;
@@ -105,6 +110,36 @@ body {
     border-color: #6699ff;
 }
 
+#of-editcacheconfigmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-editconfigmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-addversionmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-editversionmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-deleteversionmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
+#of-restoreversionsmodal > .modal-dialog > .modal-content {
+    background-color: #093363;
+    border-color: #6699ff;
+}
+
 .form-control,
 .form-control:focus {
     border-color: #0099ff;
@@ -116,6 +151,14 @@ select {
     border-color: #0099ff;
     background-color: #000;
     color: #fff;
+}
+
+.modal {
+    overflow-y: auto;
+}
+
+.invalidinput {
+    border-color: #ff0000;
 }
 
 button:disabled {
