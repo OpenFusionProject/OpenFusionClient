@@ -34,9 +34,12 @@ function initialSetup(firstTime) {
     if (!firstTime) {
         // Migration from pre-1.6
         // Back everything up, just in case
-        if (fs.existsSync(configPath)) fs.copySync(configPath, configPath + ".bak");
-        if (fs.existsSync(serversPath)) fs.copySync(serversPath, serversPath + ".bak");
-        if (fs.existsSync(versionsPath)) fs.copySync(versionsPath, versionsPath + ".bak");
+        if (fs.existsSync(configPath))
+            fs.copySync(configPath, configPath + ".bak");
+        if (fs.existsSync(serversPath))
+            fs.copySync(serversPath, serversPath + ".bak");
+        if (fs.existsSync(versionsPath))
+            fs.copySync(versionsPath, versionsPath + ".bak");
         if (fs.existsSync(hashPath)) fs.copySync(hashPath, hashPath + ".bak");
     } else {
         // First-time setup
