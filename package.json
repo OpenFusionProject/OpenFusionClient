@@ -1,5 +1,5 @@
 {
-    "name": "open-fusion-client",
+    "name": "OpenFusionClient",
     "version": "1.5.2",
     "description": "Electron app to easily connect to FusionFall servers",
     "main": "index.js",
