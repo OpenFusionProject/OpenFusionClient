@@ -10,10 +10,7 @@ var userData = remote.require("app").getPath("userData");
 var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
-var cacheRoot = path.join(
-    userData,
-    "/../../LocalLow/Unity/Web Player/Cache"
-);
+var cacheRoot = path.join(userData, "/../../LocalLow/Unity/Web Player/Cache");
 var offlineRootDefault = path.join(cacheRoot, "Offline");
 var offlineRoot = offlineRootDefault;
 
@@ -95,14 +92,15 @@ function validateServerSave(modalName) {
     ipInput.classList.remove("invalidinput");
 
     if (
-        descInput.value.length < parseInt(descInput.getAttribute("minlength")) ||
+        descInput.value.length <
+            parseInt(descInput.getAttribute("minlength")) ||
         descInput.value.length > parseInt(descInput.getAttribute("maxlength"))
     ) {
         descInput.classList.add("invalidinput");
         valid = false;
     }
 
-    if (!(new RegExp(ipInput.getAttribute("pattern"))).test(ipInput.value)) {
+    if (!new RegExp(ipInput.getAttribute("pattern")).test(ipInput.value)) {
         ipInput.classList.add("invalidinput");
         valid = false;
     }
@@ -193,17 +191,17 @@ function validateVersionSave(modalName) {
     var matchingVersions = versionArray.filter(function (obj) {
         return obj.name === nameInput.value;
     });
-    var allowedMatches = (modalName === "edit") ? 1 : 0;
+    var allowedMatches = modalName === "edit" ? 1 : 0;
 
     if (
         matchingVersions.length > allowedMatches ||
-        !(new RegExp(nameInput.getAttribute("pattern"))).test(nameInput.value)
+        !new RegExp(nameInput.getAttribute("pattern")).test(nameInput.value)
     ) {
         nameInput.classList.add("invalidinput");
         valid = false;
     }
 
-    if (!(new RegExp(urlInput.getAttribute("pattern"))).test(urlInput.value)) {
+    if (!new RegExp(urlInput.getAttribute("pattern")).test(urlInput.value)) {
         urlInput.classList.add("invalidinput");
         valid = false;
     }
@@ -246,7 +244,10 @@ function editVersion() {
     var editedVersionString = null;
 
     $.each(jsonToModify["versions"], function (key, value) {
-        if (value["name"] == getSelectedVersion() && !defaultHashes.hasOwnProperty(value["name"])) {
+        if (
+            value["name"] == getSelectedVersion() &&
+            !defaultHashes.hasOwnProperty(value["name"])
+        ) {
             value["name"] =
                 $("#editversion-nameinput").val().length == 0
                     ? value["name"]
@@ -296,18 +297,27 @@ function restoreDefaultVersions() {
 function editConfig() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(configPath));
 
-    jsonToModify["autoupdate-check"] = $("#editconfig-autoupdate").prop("checked");
-    jsonToModify["cache-swapping"] = $("#editconfig-cacheswapping").prop("checked");
-    jsonToModify["enable-offline-cache"] = $("#editconfig-enableofflinecache").prop("checked");
-    jsonToModify["verify-offline-cache"] = $("#editconfig-verifyofflinecache").prop("checked");
+    jsonToModify["autoupdate-check"] = $("#editconfig-autoupdate").prop(
+        "checked"
+    );
+    jsonToModify["cache-swapping"] = $("#editconfig-cacheswapping").prop(
+        "checked"
+    );
+    jsonToModify["enable-offline-cache"] = $(
+        "#editconfig-enableofflinecache"
+    ).prop("checked");
+    jsonToModify["verify-offline-cache"] = $(
+        "#editconfig-verifyofflinecache"
+    ).prop("checked");
 
     var dirInput = $("#editconfig-offlinecachelocation:text").val();
-    var shouldChangeRoot = (
+    var shouldChangeRoot =
         remotefs.existsSync(dirInput) &&
-        remotefs.statSync(dirInput).isDirectory()
-    );
+        remotefs.statSync(dirInput).isDirectory();
 
-    jsonToModify["offline-cache-location"] = shouldChangeRoot ? dirInput : offlineRoot;
+    jsonToModify["offline-cache-location"] = shouldChangeRoot
+        ? dirInput
+        : offlineRoot;
 
     remotefs.writeFileSync(configPath, JSON.stringify(jsonToModify, null, 4));
 
@@ -323,7 +333,10 @@ function validateCacheLocation() {
     input.classList.remove("invalidinput");
     button.removeAttribute("disabled");
 
-    if (!remotefs.existsSync(input.value) || !remotefs.statSync(input.value).isDirectory()) {
+    if (
+        !remotefs.existsSync(input.value) ||
+        !remotefs.statSync(input.value).isDirectory()
+    ) {
         input.classList.add("invalidinput");
         button.setAttribute("disabled", "");
     }
@@ -348,8 +361,14 @@ function loadConfig() {
 
     $("#editconfig-autoupdate").prop("checked", config["autoupdate-check"]);
     $("#editconfig-cacheswapping").prop("checked", config["cache-swapping"]);
-    $("#editconfig-enableofflinecache").prop("checked", config["enable-offline-cache"]);
-    $("#editconfig-verifyofflinecache").prop("checked", config["verify-offline-cache"]);
+    $("#editconfig-enableofflinecache").prop(
+        "checked",
+        config["enable-offline-cache"]
+    );
+    $("#editconfig-verifyofflinecache").prop(
+        "checked",
+        config["verify-offline-cache"]
+    );
 
     // alter offline root globally
     offlineRoot = config["offline-cache-location"] || offlineRootDefault;
@@ -395,10 +414,9 @@ function loadCacheList() {
 
     // load default hashes.json for reference while running the cache handler
     if (!defaultHashes) {
-        defaultHashes = remotefs.readJsonSync(path.join(
-            __dirname,
-            "/defaults/hashes.json"
-        ));
+        defaultHashes = remotefs.readJsonSync(
+            path.join(__dirname, "/defaults/hashes.json")
+        );
     }
 
     deselectVersion(); // Remove selection and disable buttons until another server is selected
@@ -406,7 +424,7 @@ function loadCacheList() {
 
     $.each(versionArray, function (key, value) {
         var row = document.createElement("tr");
-        row.className = "cache-listing-entry"
+        row.className = "cache-listing-entry";
         row.setAttribute("id", value.name);
 
         var cellVersion = document.createElement("td");
@@ -430,24 +448,34 @@ function loadCacheList() {
 }
 
 function getCacheElemID(versionString, cacheMode, elementName) {
-    return [versionString, cacheMode, "cache", elementName].filter(function (value) {
-        return typeof value !== "undefined";
-    }).join("-");
+    return [versionString, cacheMode, "cache", elementName]
+        .filter(function (value) {
+            return typeof value !== "undefined";
+        })
+        .join("-");
 }
 
 function getCacheButtonID(versionString, cacheMode, buttonMode) {
-    return [getCacheElemID(versionString, cacheMode), buttonMode, "button"].join("-");
+    return [
+        getCacheElemID(versionString, cacheMode),
+        buttonMode,
+        "button",
+    ].join("-");
 }
 
 function getCacheLabelText(sizes) {
-    if (!sizes || sizes.total === 0)
-        return "?.?? GB / ?.?? GB";
+    if (!sizes || sizes.total === 0) return "?.?? GB / ?.?? GB";
 
     var gb = 1 << 30;
-    var labelText = (sizes.intact / gb).toFixed(2) + " / " + (sizes.total / gb).toFixed(2) + " GB";
+    var labelText =
+        (sizes.intact / gb).toFixed(2) +
+        " / " +
+        (sizes.total / gb).toFixed(2) +
+        " GB";
 
     if (sizes.altered > 0) {
-        labelText += "<br/>(" + (sizes.altered / gb).toFixed(2) + " GB Altered)";
+        labelText +=
+            "<br/>(" + (sizes.altered / gb).toFixed(2) + " GB Altered)";
     }
 
     return labelText;
@@ -461,18 +489,18 @@ function getCacheInfoCell(versionString, cacheMode) {
         download: {
             icon: "fas fa-download",
             class: "btn btn-success mr-1",
-            tooltip: "Download Cache"
+            tooltip: "Download Cache",
         },
         fix: {
             icon: "fas fa-hammer",
             class: "btn btn-warning mr-1",
-            tooltip: "Fix Altered Files in Cache"
+            tooltip: "Fix Altered Files in Cache",
         },
         delete: {
             icon: "fas fa-trash-alt",
             class: "btn btn-danger mr-1",
-            tooltip: "Delete Cache"
-        }
+            tooltip: "Delete Cache",
+        },
     };
 
     var cellCache = document.createElement("td");
@@ -483,9 +511,9 @@ function getCacheInfoCell(versionString, cacheMode) {
     labelCache.setAttribute("for", divID);
     // pull existing info from cacheSizes when available
     labelCache.innerHTML = getCacheLabelText(
-        (cacheSizes && cacheSizes[versionString]) ?
-        cacheSizes[versionString][cacheMode] :
-        null
+        cacheSizes && cacheSizes[versionString]
+            ? cacheSizes[versionString][cacheMode]
+            : null
     );
 
     var divCacheButtons = document.createElement("div");
@@ -508,7 +536,16 @@ function getCacheInfoCell(versionString, cacheMode) {
         buttonCache.setAttribute("title", config.tooltip);
         buttonCache.setAttribute("type", "button");
         // handler setup
-        buttonCache.setAttribute("onclick", "handleCache(\"" + buttonMode + "\", \"" + versionString + "\", \"" + cacheMode + "\");");
+        buttonCache.setAttribute(
+            "onclick",
+            'handleCache("' +
+                buttonMode +
+                '", "' +
+                versionString +
+                '", "' +
+                cacheMode +
+                '");'
+        );
         buttonCache.appendChild(iconItalic);
 
         divCacheButtons.appendChild(buttonCache);
@@ -526,13 +563,12 @@ function storageLoadingStart(vString, cMode) {
     var versionStrings = [];
     $.each(versionArray, function (key, value) {
         if (vString) {
-            if (vString === value.name)
-                versionStrings.push(value.name);
+            if (vString === value.name) versionStrings.push(value.name);
         } else {
             versionStrings.push(value.name);
         }
     });
-    var cacheModes = (cMode) ? [cMode] : ["offline", "playable"];
+    var cacheModes = cMode ? [cMode] : ["offline", "playable"];
 
     // deselect and disable the add version button until they are re-enabled
     deselectVersion();
@@ -541,21 +577,36 @@ function storageLoadingStart(vString, cMode) {
     // turn buttons into spinners
     $.each(versionStrings, function (vKey, versionString) {
         $.each(cacheModes, function (cKey, cacheMode) {
-            var buttonDelete = document.getElementById(getCacheButtonID(versionString, cacheMode, "delete"));
-            var buttonDownload = document.getElementById(getCacheButtonID(versionString, cacheMode, "download"));
-            var buttonFix = document.getElementById(getCacheButtonID(versionString, cacheMode, "fix"));
+            var buttonDelete = document.getElementById(
+                getCacheButtonID(versionString, cacheMode, "delete")
+            );
+            var buttonDownload = document.getElementById(
+                getCacheButtonID(versionString, cacheMode, "download")
+            );
+            var buttonFix = document.getElementById(
+                getCacheButtonID(versionString, cacheMode, "fix")
+            );
 
             if (!buttonDelete) return;
 
             buttonDelete.setAttribute("disabled", "");
-            buttonDelete.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+            buttonDelete.children[0].setAttribute(
+                "class",
+                "fas fa-spinner fa-spin fa-fw"
+            );
 
             if (cacheMode === "offline") {
                 buttonDownload.setAttribute("disabled", "");
-                buttonDownload.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+                buttonDownload.children[0].setAttribute(
+                    "class",
+                    "fas fa-spinner fa-spin fa-fw"
+                );
 
                 buttonFix.setAttribute("disabled", "");
-                buttonFix.children[0].setAttribute("class", "fas fa-spinner fa-spin fa-fw");
+                buttonFix.children[0].setAttribute(
+                    "class",
+                    "fas fa-spinner fa-spin fa-fw"
+                );
             }
         });
     });
@@ -565,7 +616,9 @@ function storageLoadingUpdate(allSizes) {
     // update cacheSizes and display results
     $.each(allSizes, function (versionString, vSizes) {
         $.each(vSizes, function (cacheMode, sizes) {
-            var label = document.getElementById(getCacheElemID(versionString, cacheMode, "label"));
+            var label = document.getElementById(
+                getCacheElemID(versionString, cacheMode, "label")
+            );
 
             cacheSizes = cacheSizes || {};
             cacheSizes[versionString] = cacheSizes[versionString] || {};
@@ -582,16 +635,25 @@ function storageLoadingComplete(allSizes) {
     // re-enable buttons according to the sizes that were read
     $.each(allSizes, function (versionString, vSizes) {
         $.each(vSizes, function (cacheMode, sizes) {
-            var buttonDelete = document.getElementById(getCacheButtonID(versionString, cacheMode, "delete"));
-            var buttonDownload = document.getElementById(getCacheButtonID(versionString, cacheMode, "download"));
-            var buttonFix = document.getElementById(getCacheButtonID(versionString, cacheMode, "fix"));
+            var buttonDelete = document.getElementById(
+                getCacheButtonID(versionString, cacheMode, "delete")
+            );
+            var buttonDownload = document.getElementById(
+                getCacheButtonID(versionString, cacheMode, "download")
+            );
+            var buttonFix = document.getElementById(
+                getCacheButtonID(versionString, cacheMode, "fix")
+            );
 
             if (!buttonDelete) return;
 
             buttonDelete.children[0].setAttribute("class", "fas fa-trash-alt");
 
             if (cacheMode === "offline") {
-                buttonDownload.children[0].setAttribute("class", "fas fa-download");
+                buttonDownload.children[0].setAttribute(
+                    "class",
+                    "fas fa-download"
+                );
                 buttonFix.children[0].setAttribute("class", "fas fa-hammer");
             }
 
@@ -626,7 +688,7 @@ function handleCache(operation, versionString, cacheMode, callback) {
         return obj.name === versionString;
     });
     // pull version url from the found object, if none found, use the default cdn link
-    var cdnRoot = (versions.length === 0) ? cdnString : versions[0].url;
+    var cdnRoot = versions.length === 0 ? cdnString : versions[0].url;
 
     var lastSizes = { intact: 0, altered: 0, total: 0 };
     var buf = "";
@@ -665,28 +727,42 @@ function handleCache(operation, versionString, cacheMode, callback) {
         spawn(
             path.join(__dirname, "lib", "cache_handler.exe"),
             [
-                "--operation", operation,
+                "--operation",
+                operation,
                 // roots below contain version-agnostic main directories for caches
-                "--playable-root", cacheRoot,
-                "--offline-root", offlineRoot,
-                "--user-dir", userData,
+                "--playable-root",
+                cacheRoot,
+                "--offline-root",
+                offlineRoot,
+                "--user-dir",
+                userData,
                 // CDN root contains version-specific directory, unless cacheMode is "all"
-                "--cdn-root", cdnRoot,
-                "--cache-mode", cacheMode || "all",
-                "--cache-version", versionString || "all",
+                "--cdn-root",
+                cdnRoot,
+                "--cache-mode",
+                cacheMode || "all",
+                "--cache-version",
+                versionString || "all",
                 // learn port from the server object and tell the script where to connect
-                "--port", server.address().port,
+                "--port",
+                server.address().port,
                 // tell the script which versions and caches are official
-                "--official-caches"
+                "--official-caches",
             ].concat(Object.keys(defaultHashes)),
             {
-                stdio: "inherit"
+                stdio: "inherit",
             }
         ).on("exit", function (code, signal) {
             if (code !== 0 || signal) {
                 dialog.showErrorBox(
                     "Sorry!",
-                    "Process \"" + operation + "\" failed with code " + code + " and signal " + signal + "."
+                    'Process "' +
+                        operation +
+                        '" failed with code ' +
+                        code +
+                        " and signal " +
+                        signal +
+                        "."
                 );
             }
 
@@ -713,7 +789,10 @@ function performCacheSwap(newVersion) {
     if (remotefs.existsSync(currentCache)) {
         // Cache already exists, find out what version it belongs to
         if (remotefs.existsSync(record)) {
-            var lastVersion = remotefs.readFileSync(record, (encoding = "utf8"));
+            var lastVersion = remotefs.readFileSync(
+                record,
+                (encoding = "utf8")
+            );
             if (lastVersion != newVersion) {
                 // Remove the directory we're trying to store the
                 // existing cache to if it already exists for whatever
@@ -773,23 +852,33 @@ function prepGameInfo(serverUUID) {
 
     if (config["verify-offline-cache"]) {
         // if required, do a full hash check, and use the offline cache only if it is fully intact
-        handleCache("hash-check", versionInfo.name, "offline", function (sizes) {
-            var versionURL = (sizes.intact < sizes.total) ? versionInfo.url : offlineURL;
-            setGameInfo(serverInfo, versionURL);
-        });
+        handleCache(
+            "hash-check",
+            versionInfo.name,
+            "offline",
+            function (sizes) {
+                var versionURL =
+                    sizes.intact < sizes.total ? versionInfo.url : offlineURL;
+                setGameInfo(serverInfo, versionURL);
+            }
+        );
         return;
     }
 
     // otherwise, if main.unity3d is present, use the offline cache
     var mainPath = path.join(offlinePath, "main.unity3d");
-    var versionURL = !remotefs.existsSync(mainPath) ? versionInfo.url : offlineURL;
+    var versionURL = !remotefs.existsSync(mainPath)
+        ? versionInfo.url
+        : offlineURL;
     setGameInfo(serverInfo, versionURL);
 }
 
 // For writing loginInfo.php, assetInfo.php, etc.
 function setGameInfo(serverInfo, versionURL) {
     // slash fix if people mess it up via text editors
-    var versionURLRoot = versionURL.endsWith("/") ? versionURL : versionURL + "/";
+    var versionURLRoot = versionURL.endsWith("/")
+        ? versionURL
+        : versionURL + "/";
     window.assetUrl = versionURLRoot; // game-client.js needs to access this
     console.log("Cache will expand from " + versionURLRoot);
 

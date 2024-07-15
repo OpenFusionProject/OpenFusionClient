@@ -1,47 +1,47 @@
 name: Publish Build
 
 on:
-  push:
-    branches: [ "main" ]
-    tags: '*'
+    push:
+        branches: ["main"]
+        tags: "*"
 
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  build:
-    runs-on: windows-2022
+    build:
+        runs-on: windows-2022
 
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Set up Node.js 20.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm install
-    - name: Pack into zip and create installer
-      run: npm run dist
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@master
-      with:
-        path: dist
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Set up Node.js 20.x
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+                  cache: "npm"
+            - name: Install dependencies
+              run: npm install
+            - name: Pack into zip and create installer
+              run: npm run dist
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@master
+              with:
+                  path: dist
 
-  publish-release:
-    if: contains(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-    - name: Download artifact
-      uses: actions/download-artifact@master
-    - name: Create release
-      uses: ncipollo/release-action@v1
-      with:
-        artifacts: "artifact/*-ia32-win.zip,artifact/*.exe"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    publish-release:
+        if: contains(github.ref, 'refs/tags/')
+        runs-on: ubuntu-latest
+        needs: build
+
+        steps:
+            - name: Download artifact
+              uses: actions/download-artifact@master
+            - name: Create release
+              uses: ncipollo/release-action@v1
+              with:
+                  artifacts: "artifact/*-ia32-win.zip,artifact/*.exe"
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
