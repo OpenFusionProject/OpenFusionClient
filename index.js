@@ -30,24 +30,52 @@ var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
 var hashPath = path.join(userData, "hashes.json");
 
+function backup() {
+    if (fs.existsSync(configPath)) fs.copySync(configPath, configPath + ".bak");
+    if (fs.existsSync(serversPath))
+        fs.copySync(serversPath, serversPath + ".bak");
+    if (fs.existsSync(versionsPath))
+        fs.copySync(versionsPath, versionsPath + ".bak");
+    if (fs.existsSync(hashPath)) fs.copySync(hashPath, hashPath + ".bak");
+}
+
+function updateDefaults() {
+    let current = fs.readJsonSync(serversPath);
+    let newDefaults = fs.readJsonSync(
+        path.join(__dirname, "/defaults/servers.json")
+    );
+    for (let i = 0; i < newDefaults["servers"].length; i++) {
+        const newDefault = newDefaults["servers"][i];
+        let found = false;
+        for (let j = 0; j < current["servers"].length; j++) {
+            let server = current["servers"][j];
+            if (newDefault["uuid"] === server["uuid"]) {
+                current["servers"][j] = newDefault;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            current["servers"].push(newDefault);
+        }
+    }
+    fs.writeFileSync(serversPath, JSON.stringify(current, null, 4));
+}
+
 function initialSetup(firstTime) {
-    if (!firstTime) {
-        // Migration from pre-1.6
-        // Back everything up, just in case
-        if (fs.existsSync(configPath))
-            fs.copySync(configPath, configPath + ".bak");
-        if (fs.existsSync(serversPath))
-            fs.copySync(serversPath, serversPath + ".bak");
-        if (fs.existsSync(versionsPath))
-            fs.copySync(versionsPath, versionsPath + ".bak");
-        if (fs.existsSync(hashPath)) fs.copySync(hashPath, hashPath + ".bak");
-    } else {
+    backup();
+
+    if (firstTime) {
         // First-time setup
         // Copy default servers
         fs.copySync(
             path.join(__dirname, "/defaults/servers.json"),
             serversPath
         );
+    } else if (fs.existsSync(serversPath)) {
+        // Migration
+        // Update default servers by replacing their entries
+        updateDefaults();
     }
 
     // Copy default versions and config
