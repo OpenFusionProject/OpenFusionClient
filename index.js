@@ -40,15 +40,15 @@ function backup() {
 }
 
 function patchVersions() {
-    let current = fs.readJsonSync(versionsPath);
-    let newDefaults = fs.readJsonSync(
+    var current = fs.readJsonSync(versionsPath);
+    var newDefaults = fs.readJsonSync(
         path.join(__dirname, "/defaults/versions.json")
     );
-    for (let i = 0; i < newDefaults["versions"].length; i++) {
-        const newDefault = newDefaults["versions"][i];
-        let found = false;
-        for (let j = 0; j < current["versions"].length; j++) {
-            let version = current["versions"][j];
+    for (var i = 0; i < newDefaults["versions"].length; i++) {
+        var newDefault = newDefaults["versions"][i];
+        var found = false;
+        for (var j = 0; j < current["versions"].length; j++) {
+            var version = current["versions"][j];
             if (newDefault["name"] === version["name"]) {
                 current["versions"][j] = newDefault;
                 found = true;
@@ -63,15 +63,15 @@ function patchVersions() {
 }
 
 function patchServers() {
-    let current = fs.readJsonSync(serversPath);
-    let newDefaults = fs.readJsonSync(
+    var current = fs.readJsonSync(serversPath);
+    var newDefaults = fs.readJsonSync(
         path.join(__dirname, "/defaults/servers.json")
     );
-    for (let i = 0; i < newDefaults["servers"].length; i++) {
-        const newDefault = newDefaults["servers"][i];
-        let found = false;
-        for (let j = 0; j < current["servers"].length; j++) {
-            let server = current["servers"][j];
+    for (var i = 0; i < newDefaults["servers"].length; i++) {
+        var newDefault = newDefaults["servers"][i];
+        var found = false;
+        for (var j = 0; j < current["servers"].length; j++) {
+            var server = current["servers"][j];
             if (newDefault["uuid"] === server["uuid"]) {
                 current["servers"][j] = newDefault;
                 found = true;
