@@ -39,7 +39,30 @@ function backup() {
     if (fs.existsSync(hashPath)) fs.copySync(hashPath, hashPath + ".bak");
 }
 
-function updateDefaults() {
+function patchVersions() {
+    let current = fs.readJsonSync(versionsPath);
+    let newDefaults = fs.readJsonSync(
+        path.join(__dirname, "/defaults/versions.json")
+    );
+    for (let i = 0; i < newDefaults["versions"].length; i++) {
+        const newDefault = newDefaults["versions"][i];
+        let found = false;
+        for (let j = 0; j < current["versions"].length; j++) {
+            let version = current["versions"][j];
+            if (newDefault["name"] === version["name"]) {
+                current["versions"][j] = newDefault;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            current["versions"].push(newDefault);
+        }
+    }
+    fs.writeFileSync(versionsPath, JSON.stringify(current, null, 4));
+}
+
+function patchServers() {
     let current = fs.readJsonSync(serversPath);
     let newDefaults = fs.readJsonSync(
         path.join(__dirname, "/defaults/servers.json")
@@ -72,14 +95,18 @@ function initialSetup(firstTime) {
             path.join(__dirname, "/defaults/servers.json"),
             serversPath
         );
+        fs.copySync(
+            path.join(__dirname, "/defaults/versions.json"),
+            versionsPath
+        );
     } else if (fs.existsSync(serversPath)) {
         // Migration
-        // Update default servers by replacing their entries
-        updateDefaults();
+        // Update default servers and versions
+        patchVersions();
+        patchServers();
     }
 
     // Copy default versions and config
-    fs.copySync(path.join(__dirname, "/defaults/versions.json"), versionsPath);
     fs.copySync(path.join(__dirname, "/defaults/config.json"), configPath);
     fs.copySync(path.join(__dirname, "/defaults/hashes.json"), hashPath);
 
