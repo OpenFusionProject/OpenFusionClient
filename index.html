@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
     <head>
         <meta charset="utf-8" />
@@ -113,18 +113,6 @@
                             data-toggle="modal"
                             data-bs-tooltip=""
                             data-placement="bottom"
-                            id="of-editconfig-button"
-                            type="button"
-                            title="Edit Configuration"
-                            data-target="#of-editconfigmodal"
-                        >
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <button
-                            class="btn btn-primary mr-1"
-                            data-toggle="modal"
-                            data-bs-tooltip=""
-                            data-placement="bottom"
                             id="of-editcache-button"
                             type="button"
                             title="Edit Game Builds"
@@ -183,6 +171,7 @@
                                 data-target="#of-restoreserversmodal"
                                 >Reset to Default Servers</a
                             >
+                            <br />
                             <a
                                 href="#of-restoreversionsmodal"
                                 onclick="$('#of-aboutmodal').modal('toggle')"
@@ -886,15 +875,33 @@
                     </div>
                 </div>
             </div>
-            <div id="of-versionnumberdiv">
-                <a
-                    id="of-versionnumber"
-                    class="text-monospace text-secondary"
-                    href="#of-aboutmodal"
+            <div id="of-config-button-div">
+                <button
+                    class="btn btn-primary mr-1"
                     data-toggle="modal"
-                    data-target="#of-aboutmodal"
-                    >v0</a
+                    data-bs-tooltip=""
+                    data-placement="right"
+                    id="of-editconfig-button"
+                    type="button"
+                    title="Edit Configuration"
+                    data-target="#of-editconfigmodal"
                 >
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+            <div id="of-about-button-div">
+                <button
+                    class="btn btn-primary mr-1"
+                    data-toggle="modal"
+                    data-bs-tooltip=""
+                    data-placement="left"
+                    id="of-about-button"
+                    type="button"
+                    title="About OpenFusionClient"
+                    data-target="#of-aboutmodal"
+                >
+                    <i class="fas fa-info-circle"></i>
+                </button>
             </div>
         </section>
         <section>

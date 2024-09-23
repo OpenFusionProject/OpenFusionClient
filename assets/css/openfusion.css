@@ -59,10 +59,16 @@ body {
         "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-#of-versionnumberdiv {
+#of-about-button-div {
     position: fixed;
     bottom: 4px;
     right: 8px;
+}
+
+#of-config-button-div {
+    position: fixed;
+    bottom: 4px;
+    left: 8px;
 }
 
 .btn-primary {

@@ -78,7 +78,6 @@ function getAppVersion() {
 
 function setAppVersionText() {
     $("#of-aboutversionnumber").text("Version " + getAppVersion());
-    $("#of-versionnumber").text("v" + getAppVersion());
 }
 
 function validateServerSave(modalName) {
