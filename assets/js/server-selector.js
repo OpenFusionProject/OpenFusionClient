@@ -11,7 +11,7 @@ var configPath = path.join(userData, "config.json");
 var serversPath = path.join(userData, "servers.json");
 var versionsPath = path.join(userData, "versions.json");
 var cacheRoot = path.join(userData, "/../../LocalLow/Unity/Web Player/Cache");
-var offlineRootDefault = path.join(cacheRoot, "Offline");
+var offlineRootDefault = path.join(cacheRoot, "../OfflineCache");
 var offlineRoot = offlineRootDefault;
 
 var cdnString = "http://cdn.dexlabs.systems/ff/big";
@@ -328,13 +328,22 @@ function editConfig() {
 function validateCacheLocation() {
     var input = document.getElementById("editconfig-offlinecachelocation");
     var button = document.getElementById("editconfig-savebutton");
+    var parent = path.join(input.value, "/..");
 
     input.classList.remove("invalidinput");
     button.removeAttribute("disabled");
 
+    // Parent MUST exist and be a directory
+    // If the target exists, check that is also a directory
+    // Also, prevent putting the offline cache inside of
+    // the normal cache folder to prevent shenanigans
     if (
-        !remotefs.existsSync(input.value) ||
-        !remotefs.statSync(input.value).isDirectory()
+        !remotefs.existsSync(parent) ||
+        !remotefs.statSync(parent).isDirectory() ||
+        (remotefs.existsSync(input.value) &&
+            !remotefs.statSync(input.value).isDirectory()) ||
+        path.join(input.value, ".") === path.join(cacheRoot, "/..") ||
+        path.join(input.value, ".").startsWith(path.join(cacheRoot))
     ) {
         input.classList.add("invalidinput");
         button.setAttribute("disabled", "");
@@ -946,6 +955,17 @@ function prepConnection(address, port) {
     console.log("Will connect to " + full);
     remotefs.writeFileSync(path.join(__dirname, "loginInfo.php"), full);
     launchGame();
+}
+
+function browseOfflineCache() {
+    var browsePath = dialog.showOpenDialog({ properties: ["openDirectory"] });
+    var offlineCacheInput = document.getElementById(
+        "editconfig-offlinecachelocation"
+    );
+    if (browsePath && offlineCacheInput) {
+        offlineCacheInput.value = browsePath;
+        validateCacheLocation();
+    }
 }
 
 // Returns the UUID of the server with the selected background color.

@@ -524,12 +524,22 @@
                                 />
                                 <label for="editconfig-offlinecachelocation"
                                     >Select Offline Cache Location:</label
-                                ><input
-                                    class="form-control form-row w-75"
-                                    id="editconfig-offlinecachelocation"
-                                    type="text"
-                                    oninput="validateCacheLocation()"
-                                />
+                                >
+                                <div class="form-row">
+                                    <input
+                                        class="form-control w-75"
+                                        id="editconfig-offlinecachelocation"
+                                        type="text"
+                                        oninput="validateCacheLocation()"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="btn btn-primary mb-2 ml-1"
+                                        onclick="browseOfflineCache()"
+                                    >
+                                        <i class="fas fa-folder"></i>
+                                    </button>
+                                </div>
                             </form>
                         </div>
                         <div class="modal-footer">
