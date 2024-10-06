@@ -80,6 +80,36 @@ function setAppVersionText() {
     $("#of-aboutversionnumber").text("Version " + getAppVersion());
 }
 
+function checkForNewAppVersion() {
+    $("#of-about-button").removeClass("pulsing");
+    setAppVersionText();
+    if (config["autoupdate-check"] === true) {
+        $.getJSON(
+            "https://api.github.com/repos/OpenFusionProject/OpenFusionClient/releases/latest",
+            {},
+            function (data) {
+                $.each(data, function (index, element) {
+                    if (index === "tag_name" && element > getAppVersion()) {
+                        console.log("New version available: " + element);
+                        var downloadPage =
+                            "https://github.com/OpenFusionProject/OpenFusionClient/releases/latest";
+                        $("#of-aboutversionnumber").html(
+                            "Version " +
+                                getAppVersion() +
+                                `<br>A new version is available! ` +
+                                `Click <a href="#" onclick='remote.require("shell").openExternal("` +
+                                downloadPage +
+                                `");'>here</a> to download.`
+                        );
+                        $("#of-about-button").addClass("pulsing");
+                        return false; // break out of loop early
+                    }
+                });
+            }
+        );
+    }
+}
+
 function validateServerSave(modalName) {
     // works everytime a key is entered into the server save form
     var descInput = document.getElementById(modalName + "server-descinput");
@@ -382,6 +412,7 @@ function loadConfig() {
     offlineRoot = config["offline-cache-location"] || offlineRootDefault;
     $("#editconfig-offlinecachelocation:text").val(offlineRoot);
 
+    checkForNewAppVersion();
     validateCacheLocation();
 }
 

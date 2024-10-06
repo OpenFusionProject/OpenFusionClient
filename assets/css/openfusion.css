@@ -65,6 +65,12 @@ body {
     right: 8px;
 }
 
+#of-about-flash-div {
+    position: fixed;
+    bottom: 4px;
+    right: 8px;
+}
+
 #of-config-button-div {
     position: fixed;
     bottom: 4px;
@@ -89,6 +95,18 @@ body {
 .btn-warning {
     background-image: url("../../assets/img/btn-warning-bg.png");
     background-repeat: repeat;
+}
+
+.form-check-input {
+    width: 25px;
+    height: 25px;
+}
+
+.form-check-label {
+    height: 25px;
+    margin-top: 5px;
+    margin-left: 10px;
+    font-size: 1rem;
 }
 
 #of-aboutmodal > .modal-dialog > .modal-content {
@@ -191,4 +209,20 @@ button > i {
     padding: 0;
     background: #000;
     clear: both;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.pulsing {
+    animation: pulse 2s infinite;
 }

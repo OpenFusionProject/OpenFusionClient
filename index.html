@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
     <head>
         <meta charset="utf-8" />
@@ -490,40 +490,63 @@
                             </button>
                         </div>
                         <div class="modal-body">
-                            <form id="editconfig-form" class="needs-validation">
-                                <label for="editconfig-autoupdate"
-                                    >Automatically update the client:</label
-                                ><input
-                                    class="form-control form-row w-75"
-                                    type="checkbox"
-                                    id="editconfig-autoupdate"
-                                />
-                                <label for="editconfig-cacheswapping"
-                                    >Swap game caches to avoid unnecessary
-                                    downloads:</label
-                                ><input
-                                    class="form-control form-row w-75"
-                                    type="checkbox"
-                                    id="editconfig-cacheswapping"
-                                />
-                                <label for="editconfig-enableofflinecache"
-                                    >Use offline caches when they are
-                                    available:</label
-                                ><input
-                                    class="form-control form-row w-75"
-                                    type="checkbox"
-                                    id="editconfig-enableofflinecache"
-                                />
-                                <label for="editconfig-verifyofflinecache"
-                                    >Verify offline caches every time they are
-                                    loaded:</label
-                                ><input
-                                    class="form-control form-row w-75"
-                                    type="checkbox"
-                                    id="editconfig-verifyofflinecache"
-                                />
+                            <form
+                                id="editconfig-form"
+                                class="needs-validation form-group"
+                            >
+                                <div class="form-check form-row">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="editconfig-autoupdate"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="editconfig-autoupdate"
+                                        >Automatically check for updates</label
+                                    >
+                                </div>
+                                <div class="form-check form-row">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="editconfig-cacheswapping"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="editconfig-cacheswapping"
+                                        >Swap game caches to avoid unnecessary
+                                        downloads</label
+                                    >
+                                </div>
+                                <div class="form-check form-row">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="editconfig-enableofflinecache"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="editconfig-enableofflinecache"
+                                        >Use offline caches when they are
+                                        available</label
+                                    >
+                                </div>
+                                <div class="form-check form-row mb-3">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="editconfig-verifyofflinecache"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="editconfig-verifyofflinecache"
+                                        >Verify offline caches every time they
+                                        are loaded</label
+                                    >
+                                </div>
                                 <label for="editconfig-offlinecachelocation"
-                                    >Select Offline Cache Location:</label
+                                    ><h5>Offline Cache Location:</h5></label
                                 >
                                 <div class="form-row">
                                     <input
@@ -534,8 +557,9 @@
                                     />
                                     <button
                                         type="button"
-                                        class="btn btn-primary mb-2 ml-1"
+                                        class="btn btn-primary ml-1"
                                         onclick="browseOfflineCache()"
+                                        title="Browse"
                                     >
                                         <i class="fas fa-folder"></i>
                                     </button>
@@ -910,6 +934,11 @@
                     title="About OpenFusionClient"
                     data-target="#of-aboutmodal"
                 >
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+            <div id="of-about-flash-div" style="z-index: -1">
+                <button class="btn btn-warning mr-1" type="button">
                     <i class="fas fa-info-circle"></i>
                 </button>
             </div>
