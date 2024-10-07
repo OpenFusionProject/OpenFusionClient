@@ -89,7 +89,7 @@ function checkForNewAppVersion() {
             {},
             function (data) {
                 $.each(data, function (index, element) {
-                    if (index === "tag_name" && element > getAppVersion()) {
+                    if (index === "tag_name" && element != remote.require("app").getVersion()) {
                         console.log("New version available: " + element);
                         var downloadPage =
                             "https://github.com/OpenFusionProject/OpenFusionClient/releases/latest";
