@@ -7,7 +7,7 @@ var path = require("path");
 
 var BrowserWindow = require("browser-window");
 var mainWindow = null;
-
+let bbb;
 var unityHomeDir = path.join(__dirname, "../../WebPlayer");
 // If running in non-packaged / development mode, this dir will be slightly different
 if (process.env.npm_node_execpath) {
