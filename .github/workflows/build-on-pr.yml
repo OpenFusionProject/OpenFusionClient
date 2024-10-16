@@ -1,0 +1,28 @@
+name: Build on Pull Request
+
+on:
+    pull_request:
+        branches: ["main"]
+
+permissions:
+    contents: write
+
+jobs:
+    build-on-pr:
+        runs-on: windows-2022
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Set up Node.js 20.x
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+                  cache: "npm"
+            - name: Install dependencies
+              run: npm install
+            - name: Run linter
+              run: npm run lint
+            - name: Pack into zip and create installer
+              run: npm run dist
