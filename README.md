@@ -18,32 +18,32 @@ In addition, if you are interested in contributing: do note that **this project 
 
 Provided that you have npm installed, clone the repository, then run install like so:
 
-```
+```shell
 git clone https://github.com/OpenFusionProject/OpenFusionClient.git
 npm install
 ```
 
 After that has completed you can then test OpenFusionClient:
 
-```
+```shell
 npm run start
 ```
 
 If you would like to package it as a standalone win32 application:
 
-```
+```shell
 npm run pack
 ```
 
 You can then compress the application directory into a zip file and installer for distribution:
 
-```
+```shell
 npm run dist
 ```
 
 Before opening a PR or running pack/dist, please do a code formatting pass:
 
-```
+```shell
 npm run prettier
 ```
 
