@@ -4,6 +4,7 @@ var gameRunning = false;
 // Unity invoked methods begin //
 
 // Uncomment and enter credentials to skip login screen
+// eslint-disable-next-line no-unused-vars
 function authDoCallback(param) {
     /*var unity = document.getElementById('unityEmbed');
   unity.SendMessage("GlobalManager", "SetTEGid", "player");
@@ -11,20 +12,26 @@ function authDoCallback(param) {
   unity.SendMessage("GlobalManager", "DoAuth", 0);*/
 }
 
+// eslint-disable-next-line no-unused-vars
 function MarkProgress(param) {}
 
+// eslint-disable-next-line no-unused-vars
 function redirect(html) {
     ipc.send("exit", 0);
 }
+// eslint-disable-next-line no-unused-vars
 function HomePage(param) {
     ipc.send("exit", 0);
 }
+// eslint-disable-next-line no-unused-vars
 function PageOut(param) {
     ipc.send("exit", 0);
 }
+// eslint-disable-next-line no-unused-vars
 function updateSocialOptions(param) {
     ipc.send("exit", 0);
 }
+// eslint-disable-next-line no-unused-vars
 function PayPage(param) {
     ipc.send("exit", 0);
 }
@@ -39,6 +46,7 @@ function onResize() {
     }
 }
 
+// eslint-disable-next-line no-unused-vars
 function launchGame() {
     gameRunning = true;
 

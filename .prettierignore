@@ -30,4 +30,8 @@ resources/app/files/rankurl.txt
 node_modules/
 dist/
 UnityBugReporter.exe
+cache_handler/*/
+extra/
+*.sh
+
 *.min.*

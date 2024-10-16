@@ -114,7 +114,7 @@ function initialSetup(firstTime) {
     showMainWindow();
 }
 
-ipc.on("exit", function (id) {
+ipc.on("exit", function () {
     mainWindow.destroy();
 });
 
@@ -125,7 +125,7 @@ app.on("window-all-closed", function () {
 
 app.on("ready", function () {
     // Check just in case the user forgot to extract the zip.
-    zipCheck = app.getPath("exe").includes(os.tmpdir());
+    var zipCheck = app.getPath("exe").includes(os.tmpdir());
     if (zipCheck) {
         var errorMessage =
             "It has been detected that OpenFusionClient is running from the TEMP folder.\n\n" +
@@ -158,7 +158,8 @@ app.on("ready", function () {
                 showMainWindow();
             }
         }
-    } catch (ex) {
+    } catch (err) {
+        console.error(err);
         dialog.showErrorBox(
             "Error!",
             "An error occurred while checking for the config. Make sure you have sufficent permissions."

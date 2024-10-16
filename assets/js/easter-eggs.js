@@ -10,6 +10,7 @@ if (today >= christmasBegin && today <= christmasEnd) {
     sf = new Snowflakes({ zIndex: -100 });
 }
 
+// eslint-disable-next-line no-unused-vars
 function stopEasterEggs() {
     if (sf != null) {
         sf.destroy();

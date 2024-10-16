@@ -65,7 +65,7 @@ function disableVersionListButtons() {
 }
 
 function getAppVersion() {
-    appVersion = remote.require("app").getVersion();
+    var appVersion = remote.require("app").getVersion();
 
     // Simplify version, ex. 1.4.0 -> 1.4,
     // but only if a revision number isn't present
@@ -89,7 +89,10 @@ function checkForNewAppVersion() {
             {},
             function (data) {
                 $.each(data, function (index, element) {
-                    if (index === "tag_name" && element != remote.require("app").getVersion()) {
+                    if (
+                        index === "tag_name" &&
+                        element != remote.require("app").getVersion()
+                    ) {
                         console.log("New version available: " + element);
                         var downloadPage =
                             "https://github.com/OpenFusionProject/OpenFusionClient/releases/latest";
@@ -141,6 +144,7 @@ function validateServerSave(modalName) {
     }
 }
 
+// eslint-disable-next-line no-unused-vars
 function addServer() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
 
@@ -163,6 +167,7 @@ function addServer() {
     loadServerList();
 }
 
+// eslint-disable-next-line no-unused-vars
 function editServer() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
     $.each(jsonToModify["servers"], function (key, value) {
@@ -185,6 +190,7 @@ function editServer() {
     loadServerList();
 }
 
+// eslint-disable-next-line no-unused-vars
 function deleteServer() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(serversPath));
     var result = jsonToModify["servers"].filter(function (obj) {
@@ -199,6 +205,7 @@ function deleteServer() {
     loadServerList();
 }
 
+// eslint-disable-next-line no-unused-vars
 function restoreDefaultServers() {
     remotefs.copySync(
         path.join(__dirname, "/defaults/servers.json"),
@@ -242,6 +249,7 @@ function validateVersionSave(modalName) {
     }
 }
 
+// eslint-disable-next-line no-unused-vars
 function addVersion() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
 
@@ -268,6 +276,7 @@ function addVersion() {
     handleCache("hash-check", version["name"]);
 }
 
+// eslint-disable-next-line no-unused-vars
 function editVersion() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
     var editedVersionString = null;
@@ -275,7 +284,7 @@ function editVersion() {
     $.each(jsonToModify["versions"], function (key, value) {
         if (
             value["name"] == getSelectedVersion() &&
-            !defaultHashes.hasOwnProperty(value["name"])
+            !Object.prototype.hasOwnProperty.call(defaultHashes, value["name"])
         ) {
             value["name"] =
                 $("#editversion-nameinput").val().length == 0
@@ -296,6 +305,7 @@ function editVersion() {
     handleCache("hash-check", editedVersionString);
 }
 
+// eslint-disable-next-line no-unused-vars
 function deleteVersion() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(versionsPath));
 
@@ -303,7 +313,8 @@ function deleteVersion() {
         return obj.name === getSelectedVersion();
     })[0];
 
-    if (defaultHashes.hasOwnProperty(result.name)) return;
+    if (Object.prototype.hasOwnProperty.call(defaultHashes, result.name))
+        return;
 
     var resultindex = jsonToModify["versions"].indexOf(result);
 
@@ -314,6 +325,7 @@ function deleteVersion() {
     delete cacheSizes[result.name];
 }
 
+// eslint-disable-next-line no-unused-vars
 function restoreDefaultVersions() {
     remotefs.copySync(
         path.join(__dirname, "/defaults/versions.json"),
@@ -323,6 +335,7 @@ function restoreDefaultVersions() {
     handleCache("hash-check");
 }
 
+// eslint-disable-next-line no-unused-vars
 function editConfig() {
     var jsonToModify = JSON.parse(remotefs.readFileSync(configPath));
 
@@ -388,8 +401,12 @@ function loadGameVersions() {
     $("#editserver-versionselect").empty();
 
     $.each(versionArray, function (key, value) {
-        $(new Option(value.name, "val")).appendTo("#addserver-versionselect");
-        $(new Option(value.name, "val")).appendTo("#editserver-versionselect");
+        $(new window.Option(value.name, "val")).appendTo(
+            "#addserver-versionselect"
+        );
+        $(new window.Option(value.name, "val")).appendTo(
+            "#editserver-versionselect"
+        );
     });
 }
 
@@ -828,10 +845,9 @@ function performCacheSwap(newVersion) {
     if (remotefs.existsSync(currentCache)) {
         // Cache already exists, find out what version it belongs to
         if (remotefs.existsSync(record)) {
-            var lastVersion = remotefs.readFileSync(
-                record,
-                (encoding = "utf8")
-            );
+            var lastVersion = remotefs.readFileSync(record, {
+                encoding: "utf8",
+            });
             if (lastVersion != newVersion) {
                 // Remove the directory we're trying to store the
                 // existing cache to if it already exists for whatever
@@ -921,8 +937,11 @@ function setGameInfo(serverInfo, versionURL) {
     window.assetUrl = versionURLRoot; // game-client.js needs to access this
     console.log("Cache will expand from " + versionURLRoot);
 
-    remotefs.writeFileSync(path.join(__dirname, "assetInfo.php"), assetUrl);
-    if (serverInfo.hasOwnProperty("endpoint")) {
+    remotefs.writeFileSync(
+        path.join(__dirname, "assetInfo.php"),
+        window.assetUrl
+    );
+    if (Object.prototype.hasOwnProperty.call(serverInfo, "endpoint")) {
         var httpEndpoint = serverInfo.endpoint.replace("https://", "http://");
         remotefs.writeFileSync(
             path.join(__dirname, "rankurl.txt"),
@@ -966,7 +985,7 @@ function setGameInfo(serverInfo, versionURL) {
 
     // DNS resolution. there is no synchronous version for some stupid reason
     if (!address.match(/^[0-9.]+$/)) {
-        dns.lookup(address, (family = 4), function (err, resolvedAddress) {
+        dns.lookup(address, { family: 4 }, function (err, resolvedAddress) {
             if (!err) {
                 console.log("Resolved " + address + " to " + resolvedAddress);
                 address = resolvedAddress;
@@ -985,9 +1004,11 @@ function prepConnection(address, port) {
     var full = address + ":" + port;
     console.log("Will connect to " + full);
     remotefs.writeFileSync(path.join(__dirname, "loginInfo.php"), full);
+    // eslint-disable-next-line no-undef
     launchGame();
 }
 
+// eslint-disable-next-line no-unused-vars
 function browseOfflineCache() {
     var browsePath = dialog.showOpenDialog({ properties: ["openDirectory"] });
     var offlineCacheInput = document.getElementById(
@@ -1016,9 +1037,11 @@ function connectToServer() {
 
     // Prevent the user from clicking anywhere else during the transition
     $("body,html").css("pointer-events", "none");
+
+    // eslint-disable-next-line no-undef
     stopEasterEggs();
     $("#of-serverselector").fadeOut("slow", function () {
-        setTimeout(function () {
+        window.setTimeout(function () {
             $("body,html").css("pointer-events", "");
             prepGameInfo(getSelectedServer());
         }, 200);
@@ -1038,37 +1061,38 @@ function deselectVersion() {
 }
 
 // Select a server
-$("#server-table").on("click", ".server-listing-entry", function (event) {
+$("#server-table").on("click", ".server-listing-entry", function () {
     enableServerListButtons();
     $(this).addClass("bg-primary").siblings().removeClass("bg-primary");
 });
 
 // Select a version (if allowed)
-$("#cache-table").on("click", ".cache-listing-entry", function (event) {
+$("#cache-table").on("click", ".cache-listing-entry", function () {
     // wait for the add button to be re-enabled first
     if ($("#of-addversion-button").prop("disabled")) return;
     // do not select default builds
-    if (defaultHashes.hasOwnProperty($(this).attr("id"))) return;
+    if (Object.prototype.hasOwnProperty.call(defaultHashes, $(this).attr("id")))
+        return;
 
     enableVersionListButtons();
     $(this).addClass("bg-primary").siblings().removeClass("bg-primary");
 });
 
 // QoL feature: if you double click on a server it will connect
-$("#server-table").on("dblclick", ".server-listing-entry", function (event) {
+$("#server-table").on("dblclick", ".server-listing-entry", function () {
     $(this).addClass("bg-primary").siblings().removeClass("bg-primary");
     connectToServer();
 });
 
-$("#of-addservermodal").on("show.bs.modal", function (e) {
+$("#of-addservermodal").on("show.bs.modal", function () {
     validateServerSave("add");
 });
 
-$("#of-addversionmodal").on("show.bs.modal", function (e) {
+$("#of-addversionmodal").on("show.bs.modal", function () {
     validateVersionSave("add");
 });
 
-$("#of-editservermodal").on("show.bs.modal", function (e) {
+$("#of-editservermodal").on("show.bs.modal", function () {
     // populate the edit modal with existing values
     var jsonToModify = remotefs.readJsonSync(serversPath);
 
@@ -1090,7 +1114,7 @@ $("#of-editservermodal").on("show.bs.modal", function (e) {
     validateServerSave("edit");
 });
 
-$("#of-editversionmodal").on("show.bs.modal", function (e) {
+$("#of-editversionmodal").on("show.bs.modal", function () {
     // populate the edit modal with existing values
     var jsonToModify = remotefs.readJsonSync(versionsPath);
 
@@ -1105,7 +1129,7 @@ $("#of-editversionmodal").on("show.bs.modal", function (e) {
 });
 
 // Replace server name to delete
-$("#of-deleteservermodal").on("show.bs.modal", function (e) {
+$("#of-deleteservermodal").on("show.bs.modal", function () {
     var result = serverArray.filter(function (obj) {
         return obj.uuid === getSelectedServer();
     })[0];
@@ -1113,7 +1137,7 @@ $("#of-deleteservermodal").on("show.bs.modal", function (e) {
 });
 
 // Replace version name to delete
-$("#of-deleteversionmodal").on("show.bs.modal", function (e) {
+$("#of-deleteversionmodal").on("show.bs.modal", function () {
     var result = versionArray.filter(function (obj) {
         return obj.name === getSelectedVersion();
     })[0];
@@ -1121,12 +1145,12 @@ $("#of-deleteversionmodal").on("show.bs.modal", function (e) {
 });
 
 // Run the global hash check once and only if the cache modal is ever shown
-$("#of-editcacheconfigmodal").on("show.bs.modal", function (e) {
+$("#of-editcacheconfigmodal").on("show.bs.modal", function () {
     if (!cacheSizes) handleCache("hash-check");
 });
 
 // Keep all config values synced on modal show
 // Avoids cases where people forget that they changed the offline root but did not save
-$("#of-editconfigmodal").on("show.bs.modal", function (e) {
+$("#of-editconfigmodal").on("show.bs.modal", function () {
     loadConfig();
 });

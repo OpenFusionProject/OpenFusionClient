@@ -12,4 +12,3 @@ UnityBugReporter.exe
 cache_handler/*/
 extra/
 *.sh
-yarn.lock
