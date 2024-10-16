@@ -32,7 +32,7 @@ var config = [
         plugins: {},
         rules: {
             ...js.configs.recommended.rules,
-            // "no-unused-vars": "warn",
+            "no-unused-vars": "warn",
             "prefer-const": "off",
             // "no-undef" will show up a lot due client functions being in separate files so they aren't aware of each other
             "no-undef": "warn",
